@@ -24,7 +24,6 @@ jobs:
         run: |
           sudo apt update
           sudo snap install go --classic --channel=1.23/stable
-          sudo apt --yes install make docker-buildx
       - name: Build provider images
         run: make docker-build-e2e
       - name: Save images to a public registry
