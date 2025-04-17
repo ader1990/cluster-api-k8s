@@ -54,6 +54,10 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Check out repo
         uses: actions/checkout@v4
+      - name: Install requirements
+        run: |
+          sudo apt update
+          sudo apt install yamllint --yes
       - name: Increase inotify watches
         run: |
           # Prevents https://cluster-api.sigs.k8s.io/user/troubleshooting#cluster-api-with-docker----too-many-open-files
@@ -62,6 +66,8 @@ jobs:
       - name: Clone Sylva
         run: |
           git clone https://gitlab.com/sylva-projects/sylva-core
+      - name: Run Sylva
+        run: |
           cd sylva-core
           BOOTSTRAP_WATCH_TIMEOUT_MIN=1 ./bootstrap.sh environment-values/ck8s-capm3-virt
 
