@@ -1,6 +1,6 @@
 name: Sylva E2E Tests
 
-on: [push, pull_request]
+on: [push]
 
 permissions:
   contents: read
@@ -9,6 +9,7 @@ jobs:
   build-e2e-images:
     name: Build & Run E2E Images
     runs-on: ubuntu-latest
+    permissions: write-all
     steps:
       -
         name: Login to GitHub Container Registry
