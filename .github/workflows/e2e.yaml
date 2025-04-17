@@ -37,8 +37,8 @@ jobs:
           docker tag ghcr.io/canonical/cluster-api-k8s/bootstrap-controller:dev \
             ghcr.io/${{ github.repository }}/bootstrap-controller:dev-${{ github.sha }}
 
-         docker push ghcr.io/${{ github.repository }}/controlplane-controller:dev-${{ github.sha }}
-         docker push ghcr.io/${{ github.repository }}/bootstrap-controller:dev-${{ github.sha }}
+          docker push ghcr.io/${{ github.repository }}/controlplane-controller:dev-${{ github.sha }}
+          docker push ghcr.io/${{ github.repository }}/bootstrap-controller:dev-${{ github.sha }}
       - name: Build configs
         run: make release
       - name: Save configs to a public release url
