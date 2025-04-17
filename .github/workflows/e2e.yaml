@@ -1,7 +1,6 @@
-name: E2E Tests
+name: Sylva E2E Tests
 
-on:
-  pull_request:
+on: [push, pull_request]
 
 permissions:
   contents: read
@@ -9,7 +8,7 @@ permissions:
 jobs:
   build-e2e-images:
     name: Build & Run E2E Images
-    runs-on: [self-hosted, linux, X64, jammy, xlarge]
+    runs-on: ubuntu-latest
     steps:
       -
         name: Login to GitHub Container Registry
@@ -25,50 +24,26 @@ jobs:
         run: |
           sudo apt update
           sudo snap install go --classic --channel=1.23/stable
-          sudo apt install make
-          sudo apt install docker-buildx
-          sudo snap install kubectl --classic --channel=1.32/stable
+          sudo apt --yes install make docker-buildx
       - name: Build provider images
-        run: sudo make docker-build-e2e
-      - name: Build k8s-snap images
-        working-directory: hack/
+        run: make docker-build-e2e
+      - name: Save images to a public registry
         run: |
-          ./build-e2e-images.sh
-      - name: Save provider image
+          # TBD
+          docker image ls
+      - name: Build configs
+        run: make release
+      - name: Save configs to a public release url
         run: |
-          sudo docker save -o provider-images.tar ghcr.io/canonical/cluster-api-k8s/controlplane-controller:dev ghcr.io/canonical/cluster-api-k8s/bootstrap-controller:dev
-          sudo chmod 775 provider-images.tar
-      - name: Save k8s-snap image
-        run: |
-          sudo docker save -o k8s-snap-image-old.tar k8s-snap:dev-old
-          sudo docker save -o k8s-snap-image-new.tar k8s-snap:dev-new
-          sudo chmod 775 k8s-snap-image-old.tar
-          sudo chmod 775 k8s-snap-image-new.tar
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: e2e-images
-          path: |
-            provider-images.tar
-            k8s-snap-image-old.tar
-            k8s-snap-image-new.tar
-
+          # TBD
+          ls out/*.yaml
+  
   run-e2e-tests:
-    name: Run E2E Tests
-    runs-on: [self-hosted, linux, X64, jammy, xlarge]
+    name: Run Sylva E2E Tests
+    runs-on: ubuntu-latest
     needs: build-e2e-images
     strategy:
-      matrix:
-        ginkgo_focus:
-          - "KCP remediation"
-          - "MachineDeployment remediation"
-          - "Workload cluster creation"
-          - "Workload cluster scaling"
-          - "Workload cluster upgrade"
-          - "Certificate Refresh"
-          - "Orchestrated In place upgrades"
-      # TODO(ben): Remove once all tests are running stable.
-      fail-fast: false
+      fail-fast: true
     steps:
       -
         name: Login to GitHub Container Registry
@@ -80,45 +55,14 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Check out repo
         uses: actions/checkout@v4
-      - name: Install requirements
-        run: |
-          sudo apt update
-          sudo snap install go --classic --channel=1.23/stable
-          sudo apt install make
-          sudo apt install docker-buildx
-          sudo snap install kubectl --classic --channel=1.32/stable
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: e2e-images
-          path: .
-      - name: Load provider image
-        run: sudo docker load -i provider-images.tar
-      - name: Load k8s-snap old image
-        run: |
-          sudo docker load -i k8s-snap-image-old.tar
-      - name: Load k8s-snap new image
-        if: matrix.ginkgo_focus == 'Workload cluster upgrade'
-        run: |
-          sudo docker load -i k8s-snap-image-new.tar
-      - name: Create docker network
-        run: |
-          sudo docker network create kind --driver=bridge -o com.docker.network.bridge.enable_ip_masquerade=true
       - name: Increase inotify watches
         run: |
           # Prevents https://cluster-api.sigs.k8s.io/user/troubleshooting#cluster-api-with-docker----too-many-open-files
           sudo sysctl fs.inotify.max_user_watches=1048576
           sudo sysctl fs.inotify.max_user_instances=8192
-      - name: Run e2e tests
+      - name: Clone Sylva
         run: |
-          sudo GINKGO_FOCUS="${{ matrix.ginkgo_focus }}" SKIP_RESOURCE_CLEANUP=true make test-e2e
-      - name: Change artifact permissions
-        if: always()
-        run: |
-          sudo chown -R $USER _artifacts
-      - name: Upload test artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: e2e-test-artifacts-${{ github.run_id }}-${{ env.RANDOM_STRING }}-${{ matrix.ginkgo_focus }}
-          path: _artifacts
+          git clone https://gitlab.com/sylva-projects/sylva-core
+          cd sylva-core
+          BOOTSTRAP_WATCH_TIMEOUT_MIN=1 ./bootstrap.sh environment-values/ck8s-capm3-virt
+
