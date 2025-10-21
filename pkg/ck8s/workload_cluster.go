@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	apiv1 "github.com/canonical/k8s-snap-api/api/v1"
 	"golang.org/x/sync/errgroup"
@@ -55,6 +56,7 @@ type Workload struct {
 	ClientRestConfig    *rest.Config
 	K8sdClientGenerator *k8sdClientGenerator
 	microclusterPort    int
+	drainer             Drainer
 }
 
 // ClusterStatus holds stats information about the cluster.
@@ -444,7 +446,7 @@ func (w *Workload) requestJoinToken(ctx context.Context, name string, worker boo
 	return response.EncodedToken, nil
 }
 
-func (w *Workload) RemoveMachineFromCluster(ctx context.Context, machine *clusterv1.Machine) error {
+func (w *Workload) RemoveMachineFromCluster(ctx context.Context, machine *clusterv1.Machine) (err error) {
 	if machine == nil {
 		return fmt.Errorf("machine object is not set")
 	}
@@ -453,6 +455,28 @@ func (w *Workload) RemoveMachineFromCluster(ctx context.Context, machine *cluste
 	}
 
 	nodeName := machine.Status.NodeRef.Name
+
+	if err := w.drainer.CordonNode(ctx, nodeName); err != nil {
+		return fmt.Errorf("failed to cordon node %s: %w", nodeName, err)
+	}
+
+	// Ensure that we uncordon the node in case of any error during the removal process.
+	defer func() {
+		if err != nil {
+			log.FromContext(ctx).Info("Uncordoning node after machine removal failure", "node", nodeName)
+			// Use a new context since the current one might be cancelled.
+			uncordonCtx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+			if uncordonErr := w.drainer.UncordonNode(uncordonCtx, nodeName); uncordonErr != nil {
+				err = fmt.Errorf("failed to uncordon node %s after error: %w; original error: %w", nodeName, uncordonErr, err)
+			}
+			cancel()
+		}
+	}()
+
+	if err := w.drainer.DrainNode(ctx, nodeName); err != nil {
+		return fmt.Errorf("failed to drain node %s: %w", nodeName, err)
+	}
+
 	request := &apiv1.RemoveNodeRequest{Name: nodeName, Force: true}
 
 	// If we see that ignoring control-planes is causing issues, let's consider removing it.
