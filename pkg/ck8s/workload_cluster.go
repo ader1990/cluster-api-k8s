@@ -463,13 +463,34 @@ func (w *Workload) RemoveMachineFromCluster(ctx context.Context, machine *cluste
 	// Ensure that we uncordon the node in case of any error during the removal process.
 	defer func() {
 		if err != nil {
-			log.FromContext(ctx).Info("Uncordoning node after machine removal failure", "node", nodeName)
+			originalErr := err
 			// Use a new context since the current one might be cancelled.
-			uncordonCtx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
-			if uncordonErr := w.drainer.UncordonNode(uncordonCtx, nodeName); uncordonErr != nil {
-				err = fmt.Errorf("failed to uncordon node %s after error: %w; original error: %w", nodeName, uncordonErr, err)
+			retryCtx, retryCancel := context.WithTimeout(context.Background(), 5*time.Minute)
+			defer retryCancel()
+
+			ticker := time.NewTicker(10 * time.Second)
+
+			for {
+				select {
+				case <-retryCtx.Done():
+					log.FromContext(ctx).Error(retryCtx.Err(), "Failed to uncordon node after machine removal failure within the retry timeout", "node", nodeName)
+					return
+				case <-ticker.C:
+				}
+
+				log.FromContext(ctx).Info("Uncordoning node after machine removal failure", "node", nodeName)
+				uncordonCtx, uncordonCancel := context.WithTimeout(retryCtx, 30*time.Second)
+				if uncordonErr := w.drainer.UncordonNode(uncordonCtx, nodeName); uncordonErr != nil {
+					log.FromContext(ctx).Error(uncordonErr, "Failed to uncordon node, will retry", "node", nodeName)
+					err = fmt.Errorf("failed to uncordon node %s after error: %w; original error: %w", nodeName, uncordonErr, originalErr)
+				} else {
+					uncordonCancel()
+					log.FromContext(ctx).Info("Successfully uncordoned node after machine removal failure", "node", nodeName)
+					return
+				}
+				// Cancel manually since we are in a loop.
+				uncordonCancel()
 			}
-			cancel()
 		}
 	}()
 
