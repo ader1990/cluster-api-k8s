@@ -262,6 +262,16 @@ func (d *drainer) evictOrDeletePods(ctx context.Context, pods []corev1.Pod) {
 			deletionDeadline := pod.DeletionTimestamp.Add(time.Duration(d.opts.GracePeriodSeconds) * time.Second)
 			if d.nowFunc().After(deletionDeadline) {
 				podLog.Info("Pod is stuck in terminating state for longer than the grace period, force deleting")
+
+				// Remove finalizers to allow immediate deletion
+				patch := ctrlclient.StrategicMergeFrom(&pod, ctrlclient.MergeFromWithOptimisticLock{})
+				newPod := pod.DeepCopy()
+				newPod.Finalizers = nil
+				if err := d.client.Patch(ctx, newPod, patch); err != nil {
+					podLog.Error(err, "Failed to remove finalizers from pod before force deletion")
+					continue
+				}
+
 				err := d.client.Delete(ctx, &pod, &ctrlclient.DeleteOptions{
 					GracePeriodSeconds: ptr.To(int64(0)),
 				})
