@@ -200,8 +200,13 @@ func (d *drainer) getPodsToEvict(ctx context.Context, nodeName string) ([]corev1
 				break
 			}
 		}
-		if !d.opts.IgnoreDaemonsets && isDaemonSet {
-			return nil, fmt.Errorf("pod %s/%s is managed by a DaemonSet; cannot drain node without IgnoreDaemonsets option", pod.Namespace, pod.Name)
+		if isDaemonSet {
+			if !d.opts.IgnoreDaemonsets {
+				return nil, fmt.Errorf("pod %s/%s is managed by a DaemonSet; cannot drain node without IgnoreDaemonsets option", pod.Namespace, pod.Name)
+			} else {
+				logger.Info("Skipping DaemonSet pod", "pod", pod.Name, "namespace", pod.Namespace)
+				continue
+			}
 		}
 
 		///
