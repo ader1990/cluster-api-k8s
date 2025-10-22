@@ -155,7 +155,7 @@ func (d *drainer) DrainNode(ctx context.Context, nodeName string) error {
 			evictCtx, cancel = context.WithTimeout(ctx, d.opts.Timeout)
 		}
 
-		d.evictPods(evictCtx, podsToEvict)
+		d.evictOrDeletePods(evictCtx, podsToEvict)
 
 		// Can not defer cancel here because of the loop
 		if cancel != nil {
@@ -169,7 +169,7 @@ func (d *drainer) DrainNode(ctx context.Context, nodeName string) error {
 // getPodsToEvict returns the list of pods on the given node that should be evicted
 // based on the drain options.
 func (d *drainer) getPodsToEvict(ctx context.Context, nodeName string) ([]corev1.Pod, error) {
-	logger := log.FromContext(ctx).WithValues("node", nodeName, "scope", "GetPodsToEvict")
+	logger := log.FromContext(ctx).WithValues("node", nodeName, "scope", "getPodsToEvict")
 
 	podList := &corev1.PodList{}
 	if err := d.client.List(ctx, podList, &ctrlclient.ListOptions{
@@ -242,12 +242,12 @@ func (d *drainer) getPodsToEvict(ctx context.Context, nodeName string) ([]corev1
 	return podsToEvict, nil
 }
 
-// evictPods evicts the given pods from the node.
+// evictOrDeletePods evicts or deletes the given pods from the node.
 // It first tries to evict the pods using the eviction API,
 // and if that fails due to PodDisruptionBudget constraints, it deletes the pods if allowed.
 // It also force deletes pods that are stuck in terminating state for longer than the grace period.
-func (d *drainer) evictPods(ctx context.Context, pods []corev1.Pod) {
-	logger := log.FromContext(ctx).WithValues("scope", "EvictPods")
+func (d *drainer) evictOrDeletePods(ctx context.Context, pods []corev1.Pod) {
+	logger := log.FromContext(ctx).WithValues("scope", "evictOrDeletePods")
 
 	for _, pod := range pods {
 		podLog := logger.WithValues("pod", pod.Name, "namespace", pod.Namespace)
