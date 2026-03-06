@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	apiv1 "github.com/canonical/k8s-snap-api/api/v1"
 	"golang.org/x/sync/errgroup"
@@ -453,7 +454,7 @@ func (w *Workload) RemoveMachineFromCluster(ctx context.Context, machine *cluste
 	}
 
 	nodeName := machine.Status.NodeRef.Name
-	request := &apiv1.RemoveNodeRequest{Name: nodeName, Force: true}
+	request := &apiv1.RemoveNodeRequest{Name: nodeName, Force: false}
 
 	// If we see that ignoring control-planes is causing issues, let's consider removing it.
 	// It *should* not be necessary as a machine should be able to remove itself from the cluster.
@@ -467,6 +468,7 @@ func (w *Workload) RemoveMachineFromCluster(ctx context.Context, machine *cluste
 	if err := w.doK8sdRequest(ctx, k8sdProxy, http.MethodPost, fmt.Sprintf("%s/%s", apiv1.K8sdAPIVersion, apiv1.ClusterAPIRemoveNodeRPC), header, request, nil); err != nil {
 		return fmt.Errorf("failed to remove %s from cluster: %w", machine.Name, err)
 	}
+	time.Sleep(60 * time.Second)
 	return nil
 }
 
