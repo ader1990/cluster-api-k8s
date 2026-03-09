@@ -446,7 +446,7 @@ func (w *Workload) requestJoinToken(ctx context.Context, name string, worker boo
 	return response.EncodedToken, nil
 }
 
-func (w *Workload) RemoveMachineFromCluster(ctx context.Context, machine *clusterv1.Machine, Force bool) error {
+func (w *Workload) RemoveMachineFromCluster(ctx context.Context, machine *clusterv1.Machine, Force bool) (err error) {
 	if machine == nil {
 		return fmt.Errorf("machine object is not set")
 	}
