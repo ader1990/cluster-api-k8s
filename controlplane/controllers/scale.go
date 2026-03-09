@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -132,6 +133,7 @@ func (r *CK8sControlPlaneReconciler) scaleDownControlPlane(
 		// and proceed with the machine removal.
 		if err := workloadCluster.RemoveMachineFromCluster(ctx, machineToDelete, false); err != nil {
 			logger.Error(err, "failed to remove machine from microcluster cleanly")
+			time.Sleep(60 * time.Second)
 			if errForce := workloadCluster.RemoveMachineFromCluster(ctx, machineToDelete, true); err != nil {
 				logger.Error(err, "failed to remove machine from microcluster forcefully")
 				return ctrl.Result{}, fmt.Errorf("failed to remove machine from microcluster: %w", errForce)
