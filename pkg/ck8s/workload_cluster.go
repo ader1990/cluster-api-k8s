@@ -44,7 +44,7 @@ type WorkloadCluster interface {
 	NewControlPlaneJoinToken(ctx context.Context, name string) (string, error)
 	NewWorkerJoinToken(ctx context.Context) (string, error)
 
-	RemoveMachineFromCluster(ctx context.Context, machine *clusterv1.Machine) error
+	RemoveMachineFromCluster(ctx context.Context, machine *clusterv1.Machine, Force bool) error
 }
 
 // Workload defines operations on workload clusters.
@@ -445,7 +445,7 @@ func (w *Workload) requestJoinToken(ctx context.Context, name string, worker boo
 	return response.EncodedToken, nil
 }
 
-func (w *Workload) RemoveMachineFromCluster(ctx context.Context, machine *clusterv1.Machine) error {
+func (w *Workload) RemoveMachineFromCluster(ctx context.Context, machine *clusterv1.Machine, Force bool) error {
 	if machine == nil {
 		return fmt.Errorf("machine object is not set")
 	}
@@ -454,7 +454,7 @@ func (w *Workload) RemoveMachineFromCluster(ctx context.Context, machine *cluste
 	}
 
 	nodeName := machine.Status.NodeRef.Name
-	request := &apiv1.RemoveNodeRequest{Name: nodeName, Force: false}
+	request := &apiv1.RemoveNodeRequest{Name: nodeName, Force: Force}
 
 	// If we see that ignoring control-planes is causing issues, let's consider removing it.
 	// It *should* not be necessary as a machine should be able to remove itself from the cluster.
