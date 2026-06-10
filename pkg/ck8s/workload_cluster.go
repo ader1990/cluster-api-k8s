@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"time"
 
 	apiv1 "github.com/canonical/k8s-snap-api/api/v1"
 	"golang.org/x/sync/errgroup"
@@ -44,7 +43,7 @@ type WorkloadCluster interface {
 	NewControlPlaneJoinToken(ctx context.Context, name string) (string, error)
 	NewWorkerJoinToken(ctx context.Context) (string, error)
 
-	RemoveMachineFromCluster(ctx context.Context, machine *clusterv1.Machine, Force bool) error
+	RemoveMachineFromCluster(ctx context.Context, machine *clusterv1.Machine, force bool) error
 }
 
 // Workload defines operations on workload clusters.
@@ -446,7 +445,7 @@ func (w *Workload) requestJoinToken(ctx context.Context, name string, worker boo
 	return response.EncodedToken, nil
 }
 
-func (w *Workload) RemoveMachineFromCluster(ctx context.Context, machine *clusterv1.Machine, Force bool) (err error) {
+func (w *Workload) RemoveMachineFromCluster(ctx context.Context, machine *clusterv1.Machine, force bool) (err error) {
 	if machine == nil {
 		return fmt.Errorf("machine object is not set")
 	}
@@ -465,7 +464,7 @@ func (w *Workload) RemoveMachineFromCluster(ctx context.Context, machine *cluste
 		logger.Info("Node could not be drained.", "reason", err.Error())
 	}
 
-	request := &apiv1.RemoveNodeRequest{Name: nodeName, Force: Force}
+	request := &apiv1.RemoveNodeRequest{Name: nodeName, Force: force}
 
 	// If we see that ignoring control-planes is causing issues, let's consider removing it.
 	// It *should* not be necessary as a machine should be able to remove itself from the cluster.
@@ -479,7 +478,6 @@ func (w *Workload) RemoveMachineFromCluster(ctx context.Context, machine *cluste
 	if err := w.doK8sdRequest(ctx, k8sdProxy, http.MethodPost, fmt.Sprintf("%s/%s", apiv1.K8sdAPIVersion, apiv1.ClusterAPIRemoveNodeRPC), header, request, nil); err != nil {
 		return fmt.Errorf("failed to remove %s from cluster: %w", machine.Name, err)
 	}
-	time.Sleep(60 * time.Second)
 	return nil
 }
 
