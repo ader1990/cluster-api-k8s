@@ -44,7 +44,7 @@ type WorkloadCluster interface {
 	NewControlPlaneJoinToken(ctx context.Context, name string) (string, error)
 	NewWorkerJoinToken(ctx context.Context) (string, error)
 
-	RemoveMachineFromCluster(ctx context.Context, machine *clusterv1.Machine) error
+	RemoveMachineFromCluster(ctx context.Context, machine *clusterv1.Machine, Force bool) error
 }
 
 // Workload defines operations on workload clusters.
@@ -446,7 +446,7 @@ func (w *Workload) requestJoinToken(ctx context.Context, name string, worker boo
 	return response.EncodedToken, nil
 }
 
-func (w *Workload) RemoveMachineFromCluster(ctx context.Context, machine *clusterv1.Machine) (err error) {
+func (w *Workload) RemoveMachineFromCluster(ctx context.Context, machine *clusterv1.Machine, Force bool) (err error) {
 	if machine == nil {
 		return fmt.Errorf("machine object is not set")
 	}
@@ -456,49 +456,16 @@ func (w *Workload) RemoveMachineFromCluster(ctx context.Context, machine *cluste
 
 	nodeName := machine.Status.NodeRef.Name
 
+	logger := log.FromContext(ctx)
 	if err := w.drainer.CordonNode(ctx, nodeName); err != nil {
-		return fmt.Errorf("failed to cordon node %s: %w", nodeName, err)
+		logger.Info("Node could not be cordoned.", "reason", err.Error())
 	}
-
-	// Ensure that we uncordon the node in case of any error during the removal process.
-	defer func() {
-		if err != nil {
-			originalErr := err
-			// Use a new context since the current one might be cancelled.
-			retryCtx, retryCancel := context.WithTimeout(context.Background(), 5*time.Minute)
-			defer retryCancel()
-
-			ticker := time.NewTicker(10 * time.Second)
-
-			for {
-				select {
-				case <-retryCtx.Done():
-					log.FromContext(ctx).Error(retryCtx.Err(), "Failed to uncordon node after machine removal failure within the retry timeout", "node", nodeName)
-					return
-				case <-ticker.C:
-				}
-
-				log.FromContext(ctx).Info("Uncordoning node after machine removal failure", "node", nodeName)
-				uncordonCtx, uncordonCancel := context.WithTimeout(retryCtx, 30*time.Second)
-				if uncordonErr := w.drainer.UncordonNode(uncordonCtx, nodeName); uncordonErr != nil {
-					log.FromContext(ctx).Error(uncordonErr, "Failed to uncordon node, will retry", "node", nodeName)
-					err = fmt.Errorf("failed to uncordon node %s after error: %w; original error: %w", nodeName, uncordonErr, originalErr)
-				} else {
-					uncordonCancel()
-					log.FromContext(ctx).Info("Successfully uncordoned node after machine removal failure", "node", nodeName)
-					return
-				}
-				// Cancel manually since we are in a loop.
-				uncordonCancel()
-			}
-		}
-	}()
 
 	if err := w.drainer.DrainNode(ctx, nodeName); err != nil {
-		return fmt.Errorf("failed to drain node %s: %w", nodeName, err)
+		logger.Info("Node could not be drained.", "reason", err.Error())
 	}
 
-	request := &apiv1.RemoveNodeRequest{Name: nodeName, Force: false}
+	request := &apiv1.RemoveNodeRequest{Name: nodeName, Force: Force}
 
 	// If we see that ignoring control-planes is causing issues, let's consider removing it.
 	// It *should* not be necessary as a machine should be able to remove itself from the cluster.
