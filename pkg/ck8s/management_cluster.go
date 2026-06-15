@@ -103,10 +103,10 @@ func (m *Management) GetWorkloadCluster(ctx context.Context, clusterKey client.O
 		AllowDeletion:         true,
 		IgnoreDaemonsets:      true,
 		DeleteEmptydirData:    true,
-		Timeout:               5 * time.Minute,
-		EvictionTimeout:       1 * time.Minute,
-		EvictionRetryInterval: 20 * time.Second,
-		GracePeriodSeconds:    10,
+		Timeout:               60 * time.Minute,
+		EvictionTimeout:       30 * time.Minute,
+		EvictionRetryInterval: 5 * time.Minute,
+		GracePeriodSeconds:    600,
 	})
 
 	workload := &Workload{
