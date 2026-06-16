@@ -104,7 +104,7 @@ func (r *CK8sControlPlaneReconciler) scaleDownControlPlane(
 	logger := ctrl.LoggerFrom(ctx)
 
 	for _, machine := range controlPlane.Machines {
-		if time.Since(machine.Status.LastUpdated.Time) < 5 * time.Minute {
+		if time.Since(machine.Status.LastUpdated.Time) < 5*time.Minute {
 			logger.Info("The newest machine is not older than 5 minutes, requeuing to allow for convergence")
 			return ctrl.Result{Requeue: true}, nil
 		}
