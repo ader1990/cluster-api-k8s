@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	apiv1 "github.com/canonical/k8s-snap-api/api/v1"
-        apiv1_annotations "github.com/canonical/k8s-snap-api/api/v1/annotations"
+	apiv1_annotations "github.com/canonical/k8s-snap-api/api/v1/annotations"
 	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 
