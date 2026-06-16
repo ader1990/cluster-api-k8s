@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -101,6 +102,13 @@ func (r *CK8sControlPlaneReconciler) scaleDownControlPlane(
 	outdatedMachines collections.Machines,
 ) (ctrl.Result, error) {
 	logger := ctrl.LoggerFrom(ctx)
+
+	for _, machine := range controlPlane.Machines {
+		if time.Since(machine.Status.LastUpdated.Time) < 5 * time.Minute {
+			logger.Info("The newest machine is not older than 5 minutes, requeuing to allow for convergence")
+			return ctrl.Result{Requeue: true}, nil
+		}
+	}
 
 	// Pick the Machine that we should scale down.
 	machineToDelete, err := selectMachineForScaleDown(ctx, controlPlane, outdatedMachines)
