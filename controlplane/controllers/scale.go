@@ -132,8 +132,8 @@ func (r *CK8sControlPlaneReconciler) scaleDownControlPlane(
 		return ctrl.Result{}, fmt.Errorf("failed to create client to workload cluster: %w", err)
 	}
 	for _, node := range controlPlaneNodes.Items {
-		if time.Since(node.ObjectMeta.CreationTimestamp.Time) < 1*time.Minute {
-			logger.Info("The newest machine is not older than 5 minutes, requeuing to allow for convergence")
+		if time.Since(node.ObjectMeta.CreationTimestamp.Time) < 5*time.Minute {
+			logger.Info("The newest controller is not older than 5 minutes, requeuing to allow for convergence")
 			return ctrl.Result{Requeue: true}, nil
 		}
 	}
