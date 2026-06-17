@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	apiv1 "github.com/canonical/k8s-snap-api/api/v1"
-	apiv1_annotations "github.com/canonical/k8s-snap-api/api/v1/annotations"
 	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 
@@ -99,10 +98,6 @@ func GenerateInitControlPlaneConfig(cfg InitControlPlaneConfig) (apiv1.Bootstrap
 	if out.ClusterConfig.Annotations == nil {
 		out.ClusterConfig.Annotations = map[string]string{}
 	}
-
-	trueStr := "true"
-	out.ClusterConfig.Annotations[apiv1_annotations.AnnotationSkipCleanupKubernetesNodeOnRemove] = trueStr
-	out.ClusterConfig.Annotations[apiv1_annotations.AnnotationSkipStopServicesOnRemove] = trueStr
 
 	// features
 	out.ClusterConfig.DNS.Enabled = ptr.To(cfg.InitConfig.GetEnableDefaultDNS())
