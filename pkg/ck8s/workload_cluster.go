@@ -42,6 +42,7 @@ type WorkloadCluster interface {
 	UpdateAgentConditions(ctx context.Context, controlPlane *ControlPlane)
 	NewControlPlaneJoinToken(ctx context.Context, name string) (string, error)
 	NewWorkerJoinToken(ctx context.Context) (string, error)
+	GetControlPlaneNodes(ctx context.Context) (*corev1.NodeList, error)
 
 	RemoveMachineFromCluster(ctx context.Context, machine *clusterv1.Machine, force bool) error
 }
@@ -68,7 +69,7 @@ type ClusterStatus struct {
 	HasK8sdConfigMap bool
 }
 
-func (w *Workload) getControlPlaneNodes(ctx context.Context) (*corev1.NodeList, error) {
+func (w *Workload) GetControlPlaneNodes(ctx context.Context) (*corev1.NodeList, error) {
 	nodes := &corev1.NodeList{}
 	labels := map[string]string{
 		// NOTE(neoaggelos): Canonical Kubernetes uses node-role.kubernetes.io/control-plane="" as a label for control plane nodes.
@@ -85,7 +86,7 @@ func (w *Workload) ClusterStatus(ctx context.Context) (ClusterStatus, error) {
 	status := ClusterStatus{}
 
 	// count the control plane nodes
-	nodes, err := w.getControlPlaneNodes(ctx)
+	nodes, err := w.GetControlPlaneNodes(ctx)
 	if err != nil {
 		return status, err
 	}
@@ -155,7 +156,7 @@ type k8sdProxyOptions struct {
 
 // GetK8sdProxyForControlPlane returns a k8sd proxy client for the control plane.
 func (w *Workload) GetK8sdProxyForControlPlane(ctx context.Context, options k8sdProxyOptions) (*K8sdClient, error) {
-	cplaneNodes, err := w.getControlPlaneNodes(ctx)
+	cplaneNodes, err := w.GetControlPlaneNodes(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get control plane nodes: %w", err)
 	}
@@ -551,7 +552,7 @@ func (w *Workload) UpdateAgentConditions(ctx context.Context, controlPlane *Cont
 	}
 
 	// NOTE: this fun uses control plane nodes from the workload cluster as a source of truth for the current state.
-	controlPlaneNodes, err := w.getControlPlaneNodes(ctx)
+	controlPlaneNodes, err := w.GetControlPlaneNodes(ctx)
 	if err != nil {
 		for i := range controlPlane.Machines {
 			machine := controlPlane.Machines[i]
