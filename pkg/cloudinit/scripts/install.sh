@@ -46,8 +46,7 @@ elif [ -f "/capi/etc/snap-local-path" ]; then
   if [[ -d "${snap_local_path}" ]]; then
     snap_local_paths=($(ls ${snap_local_path}/*.snap))
   fi
-  ls ${snap_local_path}/*.assert | xargs -L 1 snap ack
-  retry_snap_install snap install --classic "${snap_local_paths[@]}"
+  retry_snap_install snap install --classic --dangerous "${snap_local_paths[@]}"
 else
   echo "No snap installation option found"
   exit 1
