@@ -29,28 +29,31 @@ import (
 
 // SetupWebhookWithManager will setup the webhooks for the CK8sControlPlane.
 func (in *CK8sControlPlane) SetupWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr, in).
-		WithValidator(in).
+	return ctrl.NewWebhookManagedBy(mgr).
+		For(in).
+		WithDefaulter(&CK8sControlPlane{}).
+		WithValidator(&CK8sControlPlane{}).
 		Complete()
 }
 
-// +kubebuilder:webhook:verbs=create;update,path=/validate-controlplane-cluster-x-k8s-io-v1beta2-ck8scontrolplane,mutating=false,failurePolicy=fail,matchPolicy=Equivalent,groups=controlplane.cluster.x-k8s.io,resources=ck8scontrolplanes,versions=v1beta2,name=validation.ck8scontrolplane.controlplane.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta2
-// +kubebuilder:webhook:verbs=create;update,path=/mutate-controlplane-cluster-x-k8s-io-v1beta2-ck8scontrolplane,mutating=true,failurePolicy=fail,matchPolicy=Equivalent,groups=controlplane.cluster.x-k8s.io,resources=ck8scontrolplanes,versions=v1beta2,name=default.ck8scontrolplane.controlplane.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta2
+// +kubebuilder:webhook:verbs=create;update,path=/validate-controlplane-cluster-x-k8s-io-v1beta2-ck8scontrolplane,mutating=false,failurePolicy=fail,matchPolicy=Equivalent,groups=controlplane.cluster.x-k8s.io,resources=ck8scontrolplanes,versions=v1beta2,name=validation.ck8scontrolplane.controlplane.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
+// +kubebuilder:webhook:verbs=create;update,path=/mutate-controlplane-cluster-x-k8s-io-v1beta2-ck8scontrolplane,mutating=true,failurePolicy=fail,matchPolicy=Equivalent,groups=controlplane.cluster.x-k8s.io,resources=ck8scontrolplanes,versions=v1beta2,name=default.ck8scontrolplane.controlplane.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
-var _ admission.Validator[*CK8sControlPlane] = &CK8sControlPlane{}
+var _ admission.CustomDefaulter = &CK8sControlPlane{}
+var _ admission.CustomValidator = &CK8sControlPlane{}
 
 // ValidateCreate will do any extra validation when creating a CK8sControlPlane.
-func (in *CK8sControlPlane) ValidateCreate(_ context.Context, _ *CK8sControlPlane) (admission.Warnings, error) {
+func (in *CK8sControlPlane) ValidateCreate(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
 	return []string{}, nil
 }
 
 // ValidateUpdate will do any extra validation when updating a CK8sControlPlane.
-func (in *CK8sControlPlane) ValidateUpdate(_ context.Context, _ *CK8sControlPlane, _ *CK8sControlPlane) (admission.Warnings, error) {
+func (in *CK8sControlPlane) ValidateUpdate(_ context.Context, _, _ runtime.Object) (admission.Warnings, error) {
 	return []string{}, nil
 }
 
 // ValidateDelete allows you to add any extra validation when deleting.
-func (in *CK8sControlPlane) ValidateDelete(_ context.Context, _ *CK8sControlPlane) (admission.Warnings, error) {
+func (in *CK8sControlPlane) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
 	return []string{}, nil
 }
 

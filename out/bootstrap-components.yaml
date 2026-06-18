@@ -14,7 +14,7 @@ metadata:
     controller-gen.kubebuilder.io/version: v0.16.1
   labels:
     cluster.x-k8s.io/provider: bootstrap-ck8s
-    cluster.x-k8s.io/v1beta2: v1beta2_v1beta2
+    cluster.x-k8s.io/v1beta1: v1beta1_v1beta2
     clusterctl.cluster.x-k8s.io: ""
   name: ck8sconfigs.bootstrap.cluster.x-k8s.io
 spec:
@@ -27,7 +27,7 @@ spec:
           namespace: cabpck-system
           path: /convert
       conversionReviewVersions:
-      - v1beta2
+      - v1beta1
       - v1beta2
   group: bootstrap.cluster.x-k8s.io
   names:
@@ -450,7 +450,7 @@ metadata:
     controller-gen.kubebuilder.io/version: v0.16.1
   labels:
     cluster.x-k8s.io/provider: bootstrap-ck8s
-    cluster.x-k8s.io/v1beta2: v1beta2_v1beta2
+    cluster.x-k8s.io/v1beta1: v1beta1_v1beta2
     clusterctl.cluster.x-k8s.io: ""
   name: ck8sconfigtemplates.bootstrap.cluster.x-k8s.io
 spec:
@@ -463,7 +463,7 @@ spec:
           namespace: cabpck-system
           path: /convert
       conversionReviewVersions:
-      - v1beta2
+      - v1beta1
       - v1beta2
   group: bootstrap.cluster.x-k8s.io
   names:
@@ -1146,7 +1146,7 @@ metadata:
 webhooks:
 - admissionReviewVersions:
   - v1
-  - v1beta2
+  - v1beta1
   clientConfig:
     service:
       name: cabpck-bootstrap-webhook-service
@@ -1168,7 +1168,7 @@ webhooks:
   sideEffects: None
 - admissionReviewVersions:
   - v1
-  - v1beta2
+  - v1beta1
   clientConfig:
     service:
       name: cabpck-bootstrap-webhook-service
@@ -1200,7 +1200,7 @@ metadata:
 webhooks:
 - admissionReviewVersions:
   - v1
-  - v1beta2
+  - v1beta1
   clientConfig:
     service:
       name: cabpck-bootstrap-webhook-service
@@ -1222,7 +1222,7 @@ webhooks:
   sideEffects: None
 - admissionReviewVersions:
   - v1
-  - v1beta2
+  - v1beta1
   clientConfig:
     service:
       name: cabpck-bootstrap-webhook-service

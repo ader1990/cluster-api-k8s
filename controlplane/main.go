@@ -25,8 +25,8 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/utils/ptr"
-	clusterv1beta2 "sigs.k8s.io/cluster-api/api/v1beta2"
-	expv1beta2 "sigs.k8s.io/cluster-api/exp/api/v1beta2"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	expv1beta1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/config"
@@ -46,8 +46,8 @@ var (
 
 func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
-	_ = clusterv1beta2.AddToScheme(scheme)
-	_ = expv1beta2.AddToScheme(scheme)
+	_ = clusterv1beta1.AddToScheme(scheme)
+	_ = expv1beta1.AddToScheme(scheme)
 	_ = bootstrapv1.AddToScheme(scheme)
 
 	_ = controlplanev1.AddToScheme(scheme)
