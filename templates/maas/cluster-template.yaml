@@ -1,4 +1,4 @@
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: Cluster
 metadata:
   name: ${CLUSTER_NAME}
@@ -16,11 +16,11 @@ spec:
     kind: CK8sControlPlane
     name: ${CLUSTER_NAME}-control-plane
   infrastructureRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
     kind: MaasCluster
     name: ${CLUSTER_NAME}
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: MaasCluster
 metadata:
   name: ${CLUSTER_NAME}
@@ -35,7 +35,7 @@ metadata:
 spec:
   machineTemplate:
     infrastructureTemplate:
-      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
       kind: MaasMachineTemplate
       name: ${CLUSTER_NAME}-control-plane
   replicas: ${CONTROL_PLANE_MACHINE_COUNT}
@@ -43,7 +43,7 @@ spec:
   spec:
     channel: ${CHANNEL}
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: MaasMachineTemplate
 metadata:
   name: "${CLUSTER_NAME}-control-plane"
@@ -56,7 +56,7 @@ spec:
       resourcePool: ${CONTROL_PLANE_MACHINE_RESOURCEPOOL:= }
       tags: [ ${CONTROL_PLANE_MACHINE_TAGS:= } ]
 ---
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: MachineDeployment
 metadata:
   name: ${CLUSTER_NAME}-worker-md-0
@@ -76,11 +76,11 @@ spec:
           kind: CK8sConfigTemplate
           name: ${CLUSTER_NAME}-md-0
       infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
         kind: MaasMachineTemplate
         name: ${CLUSTER_NAME}-md-0
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: MaasMachineTemplate
 metadata:
   name: "${CLUSTER_NAME}-md-0"

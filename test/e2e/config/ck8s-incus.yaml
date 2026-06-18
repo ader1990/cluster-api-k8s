@@ -19,7 +19,7 @@ providers:
         value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.9.6/core-components.yaml
         type: url
         files:
-          - sourcePath: "../data/shared/v1beta1/metadata.yaml"
+          - sourcePath: "../data/shared/v1beta2/metadata.yaml"
         replacements:
           - old: "imagePullPolicy: Always"
             new: "imagePullPolicy: IfNotPresent"
@@ -31,7 +31,7 @@ providers:
         value: https://github.com/lxc/cluster-api-provider-incus/releases/download/v0.8.3/infrastructure-components.yaml
         type: url
         files:
-          - sourcePath: "../data/shared/v1beta1_incus/metadata.yaml"
+          - sourcePath: "../data/shared/v1beta2_incus/metadata.yaml"
         replacements:
           - old: "imagePullPolicy: Always"
             new: "imagePullPolicy: IfNotPresent"

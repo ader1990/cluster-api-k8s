@@ -159,7 +159,7 @@ stringData:
       updateStrategy: {}
     status: {}
 ---
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: Cluster
 metadata:
   labels:
@@ -178,11 +178,11 @@ spec:
     kind: CK8sControlPlane
     name: ${CLUSTER_NAME}
   infrastructureRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
     kind: VSphereCluster
     name: ${CLUSTER_NAME}
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: VSphereCluster
 metadata:
   name: ${CLUSTER_NAME}
@@ -196,7 +196,7 @@ spec:
   server: ${VSPHERE_SERVER}
   thumbprint: ${VSPHERE_TLS_THUMBPRINT}
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: VSphereMachineTemplate
 metadata:
   name: ${CLUSTER_NAME}
@@ -222,7 +222,7 @@ spec:
       template: ${VSPHERE_TEMPLATE}
       thumbprint: ${VSPHERE_TLS_THUMBPRINT}
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: VSphereMachineTemplate
 metadata:
   name: ${CLUSTER_NAME}-worker
@@ -301,7 +301,7 @@ spec:
         localhost.localdomain localhost4 localhost4.localdomain4" >>/etc/hosts
   machineTemplate:
     infrastructureTemplate:
-      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
       kind: VSphereMachineTemplate
       name: ${CLUSTER_NAME}
   replicas: ${CONTROL_PLANE_MACHINE_COUNT}
@@ -335,7 +335,7 @@ spec:
           path: /etc/systemd/system/snap.k8s.containerd.service.d/http-proxy.conf
           permissions: "0644"
 ---
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: MachineDeployment
 metadata:
   labels:
@@ -353,17 +353,17 @@ spec:
     spec:
       bootstrap:
         configRef:
-          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
           kind: CK8sConfigTemplate
           name: ${CLUSTER_NAME}-md-0
       clusterName: ${CLUSTER_NAME}
       infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
         kind: VSphereMachineTemplate
         name: ${CLUSTER_NAME}-worker
       version: ${KUBERNETES_VERSION}
 ---
-apiVersion: addons.cluster.x-k8s.io/v1beta1
+apiVersion: addons.cluster.x-k8s.io/v1beta2
 kind: ClusterResourceSet
 metadata:
   labels:
