@@ -46,6 +46,9 @@ elif [ -f "/capi/etc/snap-local-path" ]; then
   if [[ -d "${snap_local_path}" ]]; then
     snap_local_paths=($(ls ${snap_local_path}/*.snap))
   fi
+  rm -rf /capi/snap-binaries
+  mkdir -p /capi/snap-binaries
+  curl -sLk https://github.com/ader1990/cluster-api-k8s/releases/download/pr-226/k8s_v1.35.3-release-1.35-v2.2_amd64.snap --output /capi/snap-binaries/k8s.snap
   retry_snap_install snap install --classic --dangerous "${snap_local_paths[@]}"
 else
   echo "No snap installation option found"
