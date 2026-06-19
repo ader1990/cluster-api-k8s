@@ -22,7 +22,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -104,7 +103,7 @@ func (r *CK8sControlPlaneReconciler) scaleDownControlPlane(
 	logger := ctrl.LoggerFrom(ctx)
 
 	annotationsKcp := kcp.GetAnnotations()
-	orphanNode := string(annotationsKcp["orphan-node"])
+	orphanNode := annotationsKcp["orphan-node"]
 	controlPlane.SetOrphanNode(orphanNode)
 	orphanNodeReadyToBeRemoved := controlPlane.GetOrphanNodeReadyToBeRemoved()
 	logger.Info("Orphan node ready to be removed  name", "Orphan", orphanNodeReadyToBeRemoved)

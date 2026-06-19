@@ -573,7 +573,7 @@ func (r *CK8sControlPlaneReconciler) reconcile(ctx context.Context, cluster *clu
 	}
 
 	annotationsKcp := kcp.GetAnnotations()
-	orphanNode := string(annotationsKcp["orphan-node"])
+	orphanNode := annotationsKcp["orphan-node"]
 	controlPlane.SetOrphanNode(orphanNode)
 	orphanNodeReadyToBeRemoved := controlPlane.GetOrphanNodeReadyToBeRemoved()
 	logger.Info("Orphan node ready to be removed  name", "Orphan", orphanNodeReadyToBeRemoved)

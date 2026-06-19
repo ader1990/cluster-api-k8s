@@ -447,7 +447,6 @@ func (w *Workload) requestJoinToken(ctx context.Context, name string, worker boo
 }
 
 func (w *Workload) RemoveMachineFromCluster(ctx context.Context, orphanNode string, force bool) (err error) {
-
 	request := &apiv1.RemoveNodeRequest{Name: orphanNode, Force: force}
 
 	// If we see that ignoring control-planes is causing issues, let's consider removing it.
