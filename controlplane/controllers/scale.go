@@ -112,9 +112,9 @@ func (r *CK8sControlPlaneReconciler) scaleDownControlPlane(
 	}
 
 	orphanNodeReadyToBeRemoved := controlPlane.GetOrphanNodeReadyToBeRemoved()
-	logger.Info("Orphan node ready to be removed  name", orphanNodeReadyToBeRemoved)
+	logger.Info("Orphan node ready to be removed  name", "Orphan", orphanNodeReadyToBeRemoved)
 	orphanNode := controlPlane.GetOrphanNode()
-	logger.Info("Orphan node name", orphanNode)
+	logger.Info("Orphan node name", "Orphan", orphanNode)
 	if orphanNodeReadyToBeRemoved == "" && orphanNode != "" {
 		return ctrl.Result{Requeue: true}, nil
 	}
@@ -161,7 +161,6 @@ func (r *CK8sControlPlaneReconciler) scaleDownControlPlane(
 		}
 	}
 
-	logger = logger.WithValues("machine", machineToDelete)
 	logger.Info("Removing control plane machine")
 	if err := r.Delete(ctx, machineToDelete); err != nil && !apierrors.IsNotFound(err) {
 		logger.Error(err, "Failed to delete control plane machine")
@@ -170,12 +169,12 @@ func (r *CK8sControlPlaneReconciler) scaleDownControlPlane(
 		return ctrl.Result{}, err
 	}
 
-	logger.Info("Orphan node that should be set", machineToDelete.Status.NodeRef.Name)
+	logger.Info("Orphan node that should be set", "Orphan", machineToDelete.Status.NodeRef.Name)
 	controlPlane.SetOrphanNode(machineToDelete.Status.NodeRef.Name)
-	logger.Info("Orphan node that should have been set", controlPlane.GetOrphanNode())
+	logger.Info("Orphan node that should have been set", "Orphan", controlPlane.GetOrphanNode())
 
-	logger.Info("Orphan node ready to be removed  name", controlPlane.GetOrphanNodeReadyToBeRemoved())
-	logger.Info("Orphan node name", controlPlane.GetOrphanNode())
+	logger.Info("Orphan node ready to be removed  name", "Orphan", controlPlane.GetOrphanNodeReadyToBeRemoved())
+	logger.Info("Orphan node name", "Orphan", controlPlane.GetOrphanNode())
 	// Requeue the control plane, in case there are additional operations to perform
 	return ctrl.Result{Requeue: true}, nil
 }
