@@ -138,6 +138,20 @@ func (r *CK8sControlPlaneReconciler) scaleDownControlPlane(
 		}
 	}
 
+	if machineToDelete.Status.NodeRef != nil {
+		// TODO: If the node is not part of the microcluster, this may still return an error. We should catch that case,
+		// and proceed with the machine removal.
+		logger.Info("Removing machine from cluster gracefully")
+		if err := workloadCluster.RemoveMachineFromCluster(ctx, machineToDelete, false); err != nil {
+			logger.Error(err, "Failed to remove machine from cluster gracefully")
+			logger.Info("Removing machine from cluster forcefully")
+			if errForce := workloadCluster.RemoveMachineFromCluster(ctx, machineToDelete, true); errForce != nil {
+				logger.Error(err, "failed to remove machine from microcluster forcefully")
+				return ctrl.Result{}, fmt.Errorf("failed to remove machine from cluster: %w", errForce)
+			}
+		}
+	}
+
 	logger = logger.WithValues("machine", machineToDelete)
 	logger.Info("Removing control plane machine")
 	if err := r.Delete(ctx, machineToDelete); err != nil && !apierrors.IsNotFound(err) {
