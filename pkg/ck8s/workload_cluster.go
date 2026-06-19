@@ -44,7 +44,7 @@ type WorkloadCluster interface {
 	NewWorkerJoinToken(ctx context.Context) (string, error)
 	GetControlPlaneNodes(ctx context.Context) (*corev1.NodeList, error)
 
-	RemoveMachineFromCluster(ctx context.Context, machine *clusterv1.Machine, force bool) error
+	RemoveMachineFromCluster(ctx context.Context, orphanNode string, force bool) error
 }
 
 // Workload defines operations on workload clusters.
@@ -446,30 +446,13 @@ func (w *Workload) requestJoinToken(ctx context.Context, name string, worker boo
 	return response.EncodedToken, nil
 }
 
-func (w *Workload) RemoveMachineFromCluster(ctx context.Context, machine *clusterv1.Machine, force bool) (err error) {
-	if machine == nil {
-		return fmt.Errorf("machine object is not set")
-	}
-	if machine.Status.NodeRef == nil {
-		return fmt.Errorf("machine %s has no node reference", machine.Name)
-	}
+func (w *Workload) RemoveMachineFromCluster(ctx context.Context, orphanNode string, force bool) (err error) {
 
-	nodeName := machine.Status.NodeRef.Name
-
-	logger := log.FromContext(ctx)
-	if err := w.drainer.CordonNode(ctx, nodeName); err != nil {
-		logger.Info("Node could not be cordoned.", "reason", err.Error())
-	}
-
-	if err := w.drainer.DrainNode(ctx, nodeName); err != nil {
-		logger.Info("Node could not be drained.", "reason", err.Error())
-	}
-
-	request := &apiv1.RemoveNodeRequest{Name: nodeName, Force: force}
+	request := &apiv1.RemoveNodeRequest{Name: orphanNode, Force: force}
 
 	// If we see that ignoring control-planes is causing issues, let's consider removing it.
 	// It *should* not be necessary as a machine should be able to remove itself from the cluster.
-	k8sdProxy, err := w.GetK8sdProxyForControlPlane(ctx, k8sdProxyOptions{IgnoreNodes: map[string]struct{}{nodeName: {}}})
+	k8sdProxy, err := w.GetK8sdProxyForControlPlane(ctx, k8sdProxyOptions{IgnoreNodes: map[string]struct{}{orphanNode: {}}})
 	if err != nil {
 		return fmt.Errorf("failed to create k8sd proxy: %w", err)
 	}
@@ -477,7 +460,7 @@ func (w *Workload) RemoveMachineFromCluster(ctx context.Context, machine *cluste
 	header := w.newHeaderWithCAPIAuthToken()
 
 	if err := w.doK8sdRequest(ctx, k8sdProxy, http.MethodPost, fmt.Sprintf("%s/%s", apiv1.K8sdAPIVersion, apiv1.ClusterAPIRemoveNodeRPC), header, request, nil); err != nil {
-		return fmt.Errorf("failed to remove %s from cluster: %w", machine.Name, err)
+		return fmt.Errorf("failed to remove %s from cluster: %w", orphanNode, err)
 	}
 	return nil
 }

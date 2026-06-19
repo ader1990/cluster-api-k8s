@@ -51,6 +51,7 @@ type ControlPlane struct {
 	KCP                  *controlplanev1.CK8sControlPlane
 	Cluster              *clusterv1.Cluster
 	Machines             collections.Machines
+	orphanNode           string
 	machinesPatchHelpers map[string]*patch.Helper
 
 	// reconciliationTime is the time of the current reconciliation, and should be used for all "now" calculations
@@ -103,6 +104,16 @@ func (c *ControlPlane) FailureDomains() clusterv1.FailureDomains {
 // Version returns the CK8sControlPlane's version.
 func (c *ControlPlane) Version() *string {
 	return &c.KCP.Spec.Version
+}
+
+// Version returns the CK8sControlPlane's version.
+func (c *ControlPlane) GetOrphanNode() string {
+	return c.orphanNode
+}
+
+// Version returns the CK8sControlPlane's version.
+func (c *ControlPlane) CleanOrphanNode() {
+	c.orphanNode = ""
 }
 
 // InfrastructureTemplate returns the CK8sControlPlane's infrastructure template.
