@@ -103,14 +103,6 @@ func (r *CK8sControlPlaneReconciler) scaleDownControlPlane(
 ) (ctrl.Result, error) {
 	logger := ctrl.LoggerFrom(ctx)
 
-	microclusterPort := controlPlane.KCP.Spec.CK8sConfigSpec.ControlPlaneConfig.GetMicroclusterPort()
-	clusterObjectKey := util.ObjectKey(cluster)
-	workloadCluster, err := r.managementCluster.GetWorkloadCluster(ctx, clusterObjectKey, microclusterPort)
-	if err != nil {
-		logger.Error(err, "failed to create client to workload cluster")
-		return ctrl.Result{}, fmt.Errorf("failed to create client to workload cluster: %w", err)
-	}
-
 	annotationsKcp := kcp.GetAnnotations()
 	orphanNode := string(annotationsKcp["orphan-node"])
 	controlPlane.SetOrphanNode(orphanNode)
@@ -121,9 +113,14 @@ func (r *CK8sControlPlaneReconciler) scaleDownControlPlane(
 		return ctrl.Result{Requeue: true}, nil
 	}
 
+	microclusterPort := controlPlane.KCP.Spec.CK8sConfigSpec.ControlPlaneConfig.GetMicroclusterPort()
+	clusterObjectKey := util.ObjectKey(cluster)
+	workloadCluster, err := r.managementCluster.GetWorkloadCluster(ctx, clusterObjectKey, microclusterPort)
+	if err != nil {
+		logger.Error(err, "failed to create client to workload cluster")
+		return ctrl.Result{}, fmt.Errorf("failed to create client to workload cluster: %w", err)
+	}
 	if orphanNodeReadyToBeRemoved != "" {
-		// TODO: If the node is not part of the microcluster, this may still return an error. We should catch that case,
-		// and proceed with the machine removal.
 		logger.Info("Removing machine from cluster gracefully")
 		if err := workloadCluster.RemoveMachineFromCluster(ctx, orphanNodeReadyToBeRemoved, false); err != nil {
 			logger.Error(err, "Failed to remove machine from cluster gracefully")
@@ -164,6 +161,10 @@ func (r *CK8sControlPlaneReconciler) scaleDownControlPlane(
 		}
 	}
 
+	annotations := map[string]string{}
+	annotations["orphan-node"] = machineToDelete.Status.NodeRef.Name
+	kcp.SetAnnotations(annotations)
+
 	logger.Info("Removing control plane machine")
 	if err := r.Delete(ctx, machineToDelete); err != nil && !apierrors.IsNotFound(err) {
 		logger.Error(err, "Failed to delete control plane machine")
@@ -171,18 +172,6 @@ func (r *CK8sControlPlaneReconciler) scaleDownControlPlane(
 			"Failed to delete control plane Machine %s for cluster %s/%s control plane: %v", machineToDelete.Name, cluster.Namespace, cluster.Name, err)
 		return ctrl.Result{}, err
 	}
-
-	logger.Info("Orphan node that should be set", "Orphan", machineToDelete.Status.NodeRef.Name)
-	controlPlane.SetOrphanNode(machineToDelete.Status.NodeRef.Name)
-	logger.Info("Orphan node that should have been set", "Orphan", controlPlane.GetOrphanNode())
-
-	logger.Info("Orphan node ready to be removed  name", "Orphan", controlPlane.GetOrphanNodeReadyToBeRemoved())
-	logger.Info("Orphan node name", "Orphan", controlPlane.GetOrphanNode())
-	// Requeue the control plane, in case there are additional operations to perform
-
-	annotations := map[string]string{}
-	annotations["orphan-node"] = controlPlane.GetOrphanNode()
-	kcp.SetAnnotations(annotations)
 
 	return ctrl.Result{Requeue: true}, nil
 }
