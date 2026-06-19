@@ -106,12 +106,18 @@ func (c *ControlPlane) Version() *string {
 	return &c.KCP.Spec.Version
 }
 
-// Version returns the CK8sControlPlane's version.
+// GetOrphanNode returns the CK8sControlPlane's orphan node.
 func (c *ControlPlane) GetOrphanNode() string {
+	machinesWithNodeRef := c.Machines.Filter(collections.HasNode())
+	for _, machine := range machinesWithNodeRef {
+		if machine.Status.NodeRef.Name == c.orphanNode {
+			return ""
+		}
+	}
 	return c.orphanNode
 }
 
-// Version returns the CK8sControlPlane's version.
+// CleanOrphanNode cleans the CK8sControlPlane's orphan node.
 func (c *ControlPlane) CleanOrphanNode() {
 	c.orphanNode = ""
 }
