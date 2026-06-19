@@ -123,6 +123,7 @@ func (r *CK8sControlPlaneReconciler) scaleDownControlPlane(
 	}
 
 	orphanNode := controlPlane.GetOrphanNode()
+	logger.Info("Orphan node name", orphanNode)
 	if orphanNode != "" {
 		// TODO: If the node is not part of the microcluster, this may still return an error. We should catch that case,
 		// and proceed with the machine removal.
@@ -163,7 +164,9 @@ func (r *CK8sControlPlaneReconciler) scaleDownControlPlane(
 		return ctrl.Result{}, err
 	}
 
+	logger.Info("Orphan node that should have been set", orphanNode)
 	controlPlane.SetOrphanNode(machineToDelete.Status.NodeRef.Name)
+	logger.Info("Orphan node that should have been set", controlPlane.GetOrphanNode())
 
 	// Requeue the control plane, in case there are additional operations to perform
 	return ctrl.Result{Requeue: true}, nil
