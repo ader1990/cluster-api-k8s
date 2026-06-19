@@ -103,6 +103,36 @@ func (r *CK8sControlPlaneReconciler) scaleDownControlPlane(
 ) (ctrl.Result, error) {
 	logger := ctrl.LoggerFrom(ctx)
 
+	microclusterPort := controlPlane.KCP.Spec.CK8sConfigSpec.ControlPlaneConfig.GetMicroclusterPort()
+	clusterObjectKey := util.ObjectKey(cluster)
+	workloadCluster, err := r.managementCluster.GetWorkloadCluster(ctx, clusterObjectKey, microclusterPort)
+	if err != nil {
+		logger.Error(err, "failed to create client to workload cluster")
+		return ctrl.Result{}, fmt.Errorf("failed to create client to workload cluster: %w", err)
+	}
+
+	orphanNodeReadyToBeRemoved := controlPlane.GetOrphanNodeReadyToBeRemoved()
+	logger.Info("Orphan node ready to be removed  name", orphanNodeReadyToBeRemoved)
+	orphanNode := controlPlane.GetOrphanNode()
+	logger.Info("Orphan node name", orphanNode)
+	if orphanNodeReadyToBeRemoved == "" && orphanNode != "" {
+		return ctrl.Result{Requeue: true}, nil
+	}
+
+	if orphanNodeReadyToBeRemoved != "" {
+		// TODO: If the node is not part of the microcluster, this may still return an error. We should catch that case,
+		// and proceed with the machine removal.
+		logger.Info("Removing machine from cluster gracefully")
+		if err := workloadCluster.RemoveMachineFromCluster(ctx, orphanNodeReadyToBeRemoved, false); err != nil {
+			logger.Error(err, "Failed to remove machine from cluster gracefully")
+			logger.Info("Removing machine from cluster forcefully")
+			if errForce := workloadCluster.RemoveMachineFromCluster(ctx, orphanNodeReadyToBeRemoved, true); errForce != nil {
+				logger.Error(err, "failed to remove machine from microcluster forcefully")
+			}
+		}
+		controlPlane.CleanOrphanNode()
+	}
+
 	// Pick the Machine that we should scale down.
 	machineToDelete, err := selectMachineForScaleDown(ctx, controlPlane, outdatedMachines)
 	if err != nil {
@@ -112,30 +142,6 @@ func (r *CK8sControlPlaneReconciler) scaleDownControlPlane(
 	if machineToDelete == nil {
 		logger.Info("Failed to pick control plane Machine to delete")
 		return ctrl.Result{}, fmt.Errorf("failed to pick control plane Machine to delete: %w", err)
-	}
-
-	microclusterPort := controlPlane.KCP.Spec.CK8sConfigSpec.ControlPlaneConfig.GetMicroclusterPort()
-	clusterObjectKey := util.ObjectKey(cluster)
-	workloadCluster, err := r.managementCluster.GetWorkloadCluster(ctx, clusterObjectKey, microclusterPort)
-	if err != nil {
-		logger.Error(err, "failed to create client to workload cluster")
-		return ctrl.Result{}, fmt.Errorf("failed to create client to workload cluster: %w", err)
-	}
-
-	orphanNode := controlPlane.GetOrphanNode()
-	logger.Info("Orphan node name", orphanNode)
-	if orphanNode != "" {
-		// TODO: If the node is not part of the microcluster, this may still return an error. We should catch that case,
-		// and proceed with the machine removal.
-		logger.Info("Removing machine from cluster gracefully")
-		if err := workloadCluster.RemoveMachineFromCluster(ctx, orphanNode, false); err != nil {
-			logger.Error(err, "Failed to remove machine from cluster gracefully")
-			logger.Info("Removing machine from cluster forcefully")
-			if errForce := workloadCluster.RemoveMachineFromCluster(ctx, orphanNode, true); errForce != nil {
-				logger.Error(err, "failed to remove machine from microcluster forcefully")
-			}
-		}
-		controlPlane.CleanOrphanNode()
 	}
 
 	// Run preflight checks ensuring the control plane is stable before proceeding with a scale up/scale down operation; if not, wait.
@@ -164,10 +170,12 @@ func (r *CK8sControlPlaneReconciler) scaleDownControlPlane(
 		return ctrl.Result{}, err
 	}
 
-	logger.Info("Orphan node that should have been set", orphanNode)
+	logger.Info("Orphan node that should be set", machineToDelete.Status.NodeRef.Name)
 	controlPlane.SetOrphanNode(machineToDelete.Status.NodeRef.Name)
 	logger.Info("Orphan node that should have been set", controlPlane.GetOrphanNode())
 
+	logger.Info("Orphan node ready to be removed  name", controlPlane.GetOrphanNodeReadyToBeRemoved())
+	logger.Info("Orphan node name", controlPlane.GetOrphanNode())
 	// Requeue the control plane, in case there are additional operations to perform
 	return ctrl.Result{Requeue: true}, nil
 }

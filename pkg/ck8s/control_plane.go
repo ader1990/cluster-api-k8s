@@ -108,6 +108,11 @@ func (c *ControlPlane) Version() *string {
 
 // GetOrphanNode returns the CK8sControlPlane's orphan node.
 func (c *ControlPlane) GetOrphanNode() string {
+	return c.orphanNode
+}
+
+// GetOrphanNodeReadyToBeRemoved returns the CK8sControlPlane's orphan node to be removed.
+func (c *ControlPlane) GetOrphanNodeReadyToBeRemoved() string {
 	machinesWithNodeRef := c.Machines.Filter(collections.HasNode())
 	for _, machine := range machinesWithNodeRef {
 		if machine.Status.NodeRef.Name == c.orphanNode {
