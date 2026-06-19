@@ -150,17 +150,6 @@ func (r *CK8sControlPlaneReconciler) scaleDownControlPlane(
 		return result, err
 	}
 
-	controlPlaneNodes, err := workloadCluster.GetControlPlaneNodes(ctx)
-	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("failed to create client to workload cluster: %w", err)
-	}
-	for _, node := range controlPlaneNodes.Items {
-		if time.Since(node.CreationTimestamp.Time) < 5*time.Minute {
-			logger.Info("The newest control plane is not older than 5 minutes, requeuing to allow for convergence")
-			return ctrl.Result{Requeue: true}, nil
-		}
-	}
-
 	annotations := map[string]string{}
 	annotations["orphan-node"] = machineToDelete.Status.NodeRef.Name
 	kcp.SetAnnotations(annotations)
