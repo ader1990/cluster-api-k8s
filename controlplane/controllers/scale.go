@@ -163,6 +163,8 @@ func (r *CK8sControlPlaneReconciler) scaleDownControlPlane(
 		return ctrl.Result{}, err
 	}
 
+	controlPlane.SetOrphanNode(machineToDelete.Status.NodeRef.Name)
+
 	// Requeue the control plane, in case there are additional operations to perform
 	return ctrl.Result{Requeue: true}, nil
 }

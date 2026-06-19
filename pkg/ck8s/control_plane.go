@@ -117,6 +117,11 @@ func (c *ControlPlane) GetOrphanNode() string {
 	return c.orphanNode
 }
 
+// SetOrphanNode cleans the CK8sControlPlane's orphan node.
+func (c *ControlPlane) SetOrphanNode(orphanNode string) {
+	c.orphanNode = orphanNode
+}
+
 // CleanOrphanNode cleans the CK8sControlPlane's orphan node.
 func (c *ControlPlane) CleanOrphanNode() {
 	c.orphanNode = ""
