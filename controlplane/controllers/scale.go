@@ -111,8 +111,9 @@ func (r *CK8sControlPlaneReconciler) scaleDownControlPlane(
 		return ctrl.Result{}, fmt.Errorf("failed to create client to workload cluster: %w", err)
 	}
 
-	annotationOrphanNodeReadyToBeRemoved := kcp.GetAnnotations(annotations)["orphan-node"]
-	orphanNode := controlPlane.SetOrphanNode(annotationOrphanNodeReadyToBeRemoved)
+	annotationsKcp := kcp.GetAnnotations()
+	orphanNode := string(annotationsKcp["orphan-node"])
+	controlPlane.SetOrphanNode(orphanNode)
 	orphanNodeReadyToBeRemoved := controlPlane.GetOrphanNodeReadyToBeRemoved()
 	logger.Info("Orphan node ready to be removed  name", "Orphan", orphanNodeReadyToBeRemoved)
 	logger.Info("Orphan node name", "Orphan", orphanNode)
@@ -131,9 +132,8 @@ func (r *CK8sControlPlaneReconciler) scaleDownControlPlane(
 				logger.Error(err, "failed to remove machine from microcluster forcefully")
 			}
 		}
-		annotationOrphanNodeReadyToBeRemoved := kcp.GetAnnotations(annotations)
-		annotationOrphanNodeReadyToBeRemoved["orphan-node"] = ""
-		kcp.SetAnnotations(annotationOrphanNodeReadyToBeRemoved)
+		annotationsKcp["orphan-node"] = ""
+		kcp.SetAnnotations(annotationsKcp)
 	}
 
 	// Pick the Machine that we should scale down.
