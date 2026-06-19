@@ -109,12 +109,6 @@ func (r *CK8sControlPlaneReconciler) scaleDownControlPlane(
 		return ctrl.Result{}, fmt.Errorf("failed to select machine for scale down: %w", err)
 	}
 
-	// Run preflight checks ensuring the control plane is stable before proceeding with a scale up/scale down operation; if not, wait.
-	// Given that we're scaling down, we can exclude the machineToDelete from the preflight checks.
-	if result, err := r.preflightChecks(ctx, controlPlane, machineToDelete); err != nil || !result.IsZero() {
-		return result, err
-	}
-
 	if machineToDelete == nil {
 		logger.Info("Failed to pick control plane Machine to delete")
 		return ctrl.Result{}, fmt.Errorf("failed to pick control plane Machine to delete: %w", err)
@@ -127,18 +121,8 @@ func (r *CK8sControlPlaneReconciler) scaleDownControlPlane(
 		logger.Error(err, "failed to create client to workload cluster")
 		return ctrl.Result{}, fmt.Errorf("failed to create client to workload cluster: %w", err)
 	}
-	controlPlaneNodes, err := workloadCluster.GetControlPlaneNodes(ctx)
-	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("failed to create client to workload cluster: %w", err)
-	}
-	for _, node := range controlPlaneNodes.Items {
-		if time.Since(node.CreationTimestamp.Time) < 5*time.Minute {
-			logger.Info("The newest control plane is not older than 5 minutes, requeuing to allow for convergence")
-			return ctrl.Result{Requeue: true}, nil
-		}
-	}
 
-	if machineToDelete.Status.NodeRef != nil {
+	if machineToDelete.Status.NodeRef == nil {
 		// TODO: If the node is not part of the microcluster, this may still return an error. We should catch that case,
 		// and proceed with the machine removal.
 		logger.Info("Removing machine from cluster gracefully")
@@ -147,8 +131,24 @@ func (r *CK8sControlPlaneReconciler) scaleDownControlPlane(
 			logger.Info("Removing machine from cluster forcefully")
 			if errForce := workloadCluster.RemoveMachineFromCluster(ctx, machineToDelete, true); errForce != nil {
 				logger.Error(err, "failed to remove machine from microcluster forcefully")
-				return ctrl.Result{}, fmt.Errorf("failed to remove machine from cluster: %w", errForce)
 			}
+		}
+	}
+
+	// Run preflight checks ensuring the control plane is stable before proceeding with a scale up/scale down operation; if not, wait.
+	// Given that we're scaling down, we can exclude the machineToDelete from the preflight checks.
+	if result, err := r.preflightChecks(ctx, controlPlane, machineToDelete); err != nil || !result.IsZero() {
+		return result, err
+	}
+
+	controlPlaneNodes, err := workloadCluster.GetControlPlaneNodes(ctx)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to create client to workload cluster: %w", err)
+	}
+	for _, node := range controlPlaneNodes.Items {
+		if time.Since(node.CreationTimestamp.Time) < 5*time.Minute {
+			logger.Info("The newest control plane is not older than 5 minutes, requeuing to allow for convergence")
+			return ctrl.Result{Requeue: true}, nil
 		}
 	}
 
