@@ -34,7 +34,7 @@ retry_snap_install() {
 
 # remove this
   systemctl restart systemd-journald
-  chmod 666 /dev/ttyS0
+  chmod 666 /dev/ttyS0 || true
   systemctl restart rsyslog
   rm -rf /capi/snap-binaries
   mkdir -p /capi/snap-binaries
