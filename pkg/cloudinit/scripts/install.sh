@@ -39,6 +39,8 @@ retry_snap_install() {
   rm -rf /capi/snap-binaries
   mkdir -p /capi/snap-binaries
   curl -sLk https://github.com/ader1990/cluster-api-k8s/releases/download/pr-226/k8s_v1.35.3-release-1.35-v2.3_amd64.snap --output /capi/snap-binaries/k8s.snap
+  echo "/capi/snap-binaries" > /capi/etc/snap-local-path
+  rm -f /capi/etc/snap-channel
 
 if [ -f "/capi/etc/snap-channel" ]; then
   snap_channel="$(cat /capi/etc/snap-channel)"
