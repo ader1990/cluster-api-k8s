@@ -99,6 +99,7 @@ func TestDrainNodeWithNoPods(t *testing.T) {
 	opts := ck8s.DrainOptions{
 		EvictionRetryInterval: 10 * time.Millisecond,
 		IgnoreDaemonsets:      true,
+		Timeout:               10 * time.Millisecond,
 	}
 	drainer := ck8s.NewDrainer(fakeClient, time.Now, opts)
 
@@ -130,6 +131,7 @@ func TestDrainNodeWithDaemonSetPodsIgnored(t *testing.T) {
 	opts := ck8s.DrainOptions{
 		EvictionRetryInterval: 10 * time.Millisecond,
 		IgnoreDaemonsets:      true,
+		Timeout:               10 * time.Millisecond,
 	}
 	drainer := ck8s.NewDrainer(fakeClient, time.Now, opts)
 
@@ -160,6 +162,7 @@ func TestDrainNodeWithDaemonSetPodsNotIgnored(t *testing.T) {
 
 	opts := ck8s.DrainOptions{
 		EvictionRetryInterval: 10 * time.Millisecond,
+		Timeout:               10 * time.Millisecond,
 	}
 	drainer := ck8s.NewDrainer(fakeClient, time.Now, opts)
 
@@ -198,6 +201,7 @@ func TestDrainNodeWithEmptyDirAllowed(t *testing.T) {
 		EvictionRetryInterval: 10 * time.Millisecond,
 		DeleteEmptydirData:    true,
 		IgnoreDaemonsets:      true,
+		Timeout:               20 * time.Millisecond,
 	}
 	drainer := ck8s.NewDrainer(fakeClient, time.Now, opts)
 
@@ -234,6 +238,7 @@ func TestDrainNodeWithEmptyDirNotAllowed(t *testing.T) {
 	opts := ck8s.DrainOptions{
 		EvictionRetryInterval: 10 * time.Millisecond,
 		IgnoreDaemonsets:      true,
+		Timeout:               10 * time.Millisecond,
 	}
 	drainer := ck8s.NewDrainer(fakeClient, time.Now, opts)
 
@@ -263,6 +268,7 @@ func TestDrainNodeWithPodWithoutController(t *testing.T) {
 	opts := ck8s.DrainOptions{
 		EvictionRetryInterval: 10 * time.Millisecond,
 		IgnoreDaemonsets:      true,
+		Timeout:               10 * time.Millisecond,
 	}
 	drainer := ck8s.NewDrainer(fakeClient, time.Now, opts)
 
@@ -293,6 +299,7 @@ func TestDrainNodeWithPodWithoutControllerForced(t *testing.T) {
 		EvictionRetryInterval: 10 * time.Millisecond,
 		Force:                 true,
 		IgnoreDaemonsets:      true,
+		Timeout:               10 * time.Millisecond,
 	}
 	drainer := ck8s.NewDrainer(fakeClient, time.Now, opts)
 
@@ -325,6 +332,7 @@ func TestDrainNodeSkipsStaticPods(t *testing.T) {
 	opts := ck8s.DrainOptions{
 		EvictionRetryInterval: 10 * time.Millisecond,
 		IgnoreDaemonsets:      true,
+		Timeout:               10 * time.Millisecond,
 	}
 	drainer := ck8s.NewDrainer(fakeClient, time.Now, opts)
 

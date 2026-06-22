@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"time"
 
 	apiv1 "github.com/canonical/k8s-snap-api/api/v1"
 	"golang.org/x/sync/errgroup"
@@ -43,8 +42,9 @@ type WorkloadCluster interface {
 	UpdateAgentConditions(ctx context.Context, controlPlane *ControlPlane)
 	NewControlPlaneJoinToken(ctx context.Context, name string) (string, error)
 	NewWorkerJoinToken(ctx context.Context) (string, error)
+	GetControlPlaneNodes(ctx context.Context) (*corev1.NodeList, error)
 
-	RemoveMachineFromCluster(ctx context.Context, machine *clusterv1.Machine) error
+	RemoveMachineFromCluster(ctx context.Context, machine *clusterv1.Machine, force bool) error
 }
 
 // Workload defines operations on workload clusters.
@@ -69,7 +69,7 @@ type ClusterStatus struct {
 	HasK8sdConfigMap bool
 }
 
-func (w *Workload) getControlPlaneNodes(ctx context.Context) (*corev1.NodeList, error) {
+func (w *Workload) GetControlPlaneNodes(ctx context.Context) (*corev1.NodeList, error) {
 	nodes := &corev1.NodeList{}
 	labels := map[string]string{
 		// NOTE(neoaggelos): Canonical Kubernetes uses node-role.kubernetes.io/control-plane="" as a label for control plane nodes.
@@ -86,7 +86,7 @@ func (w *Workload) ClusterStatus(ctx context.Context) (ClusterStatus, error) {
 	status := ClusterStatus{}
 
 	// count the control plane nodes
-	nodes, err := w.getControlPlaneNodes(ctx)
+	nodes, err := w.GetControlPlaneNodes(ctx)
 	if err != nil {
 		return status, err
 	}
@@ -156,7 +156,7 @@ type k8sdProxyOptions struct {
 
 // GetK8sdProxyForControlPlane returns a k8sd proxy client for the control plane.
 func (w *Workload) GetK8sdProxyForControlPlane(ctx context.Context, options k8sdProxyOptions) (*K8sdClient, error) {
-	cplaneNodes, err := w.getControlPlaneNodes(ctx)
+	cplaneNodes, err := w.GetControlPlaneNodes(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get control plane nodes: %w", err)
 	}
@@ -446,7 +446,7 @@ func (w *Workload) requestJoinToken(ctx context.Context, name string, worker boo
 	return response.EncodedToken, nil
 }
 
-func (w *Workload) RemoveMachineFromCluster(ctx context.Context, machine *clusterv1.Machine) (err error) {
+func (w *Workload) RemoveMachineFromCluster(ctx context.Context, machine *clusterv1.Machine, force bool) (err error) {
 	if machine == nil {
 		return fmt.Errorf("machine object is not set")
 	}
@@ -456,49 +456,16 @@ func (w *Workload) RemoveMachineFromCluster(ctx context.Context, machine *cluste
 
 	nodeName := machine.Status.NodeRef.Name
 
+	logger := log.FromContext(ctx)
 	if err := w.drainer.CordonNode(ctx, nodeName); err != nil {
-		return fmt.Errorf("failed to cordon node %s: %w", nodeName, err)
+		logger.Info("Node could not be cordoned.", "reason", err.Error())
 	}
-
-	// Ensure that we uncordon the node in case of any error during the removal process.
-	defer func() {
-		if err != nil {
-			originalErr := err
-			// Use a new context since the current one might be cancelled.
-			retryCtx, retryCancel := context.WithTimeout(context.Background(), 5*time.Minute)
-			defer retryCancel()
-
-			ticker := time.NewTicker(10 * time.Second)
-
-			for {
-				select {
-				case <-retryCtx.Done():
-					log.FromContext(ctx).Error(retryCtx.Err(), "Failed to uncordon node after machine removal failure within the retry timeout", "node", nodeName)
-					return
-				case <-ticker.C:
-				}
-
-				log.FromContext(ctx).Info("Uncordoning node after machine removal failure", "node", nodeName)
-				uncordonCtx, uncordonCancel := context.WithTimeout(retryCtx, 30*time.Second)
-				if uncordonErr := w.drainer.UncordonNode(uncordonCtx, nodeName); uncordonErr != nil {
-					log.FromContext(ctx).Error(uncordonErr, "Failed to uncordon node, will retry", "node", nodeName)
-					err = fmt.Errorf("failed to uncordon node %s after error: %w; original error: %w", nodeName, uncordonErr, originalErr)
-				} else {
-					uncordonCancel()
-					log.FromContext(ctx).Info("Successfully uncordoned node after machine removal failure", "node", nodeName)
-					return
-				}
-				// Cancel manually since we are in a loop.
-				uncordonCancel()
-			}
-		}
-	}()
 
 	if err := w.drainer.DrainNode(ctx, nodeName); err != nil {
-		return fmt.Errorf("failed to drain node %s: %w", nodeName, err)
+		logger.Info("Node could not be drained.", "reason", err.Error())
 	}
 
-	request := &apiv1.RemoveNodeRequest{Name: nodeName, Force: true}
+	request := &apiv1.RemoveNodeRequest{Name: nodeName, Force: force}
 
 	// If we see that ignoring control-planes is causing issues, let's consider removing it.
 	// It *should* not be necessary as a machine should be able to remove itself from the cluster.
@@ -585,7 +552,7 @@ func (w *Workload) UpdateAgentConditions(ctx context.Context, controlPlane *Cont
 	}
 
 	// NOTE: this fun uses control plane nodes from the workload cluster as a source of truth for the current state.
-	controlPlaneNodes, err := w.getControlPlaneNodes(ctx)
+	controlPlaneNodes, err := w.GetControlPlaneNodes(ctx)
 	if err != nil {
 		for i := range controlPlane.Machines {
 			machine := controlPlane.Machines[i]
