@@ -41,7 +41,7 @@ type WorkloadCluster interface {
 	ClusterStatus(ctx context.Context) (ClusterStatus, error)
 	UpdateAgentConditions(ctx context.Context, controlPlane *ControlPlane)
 	NewControlPlaneJoinToken(ctx context.Context, name string) (string, error)
-	NewWorkerJoinToken(ctx context.Context) (string, error)
+	NewWorkerJoinToken(ctx context.Context, name string) (string, error)
 
 	RemoveMachineFromCluster(ctx context.Context, machine *clusterv1.Machine) error
 }
@@ -419,14 +419,21 @@ func (w *Workload) NewControlPlaneJoinToken(ctx context.Context, name string) (s
 
 // NewWorkerJoinToken creates a new join token for a worker node.
 // NewWorkerJoinToken reaches out to the control-plane of the workload cluster via k8sd-proxy client.
-func (w *Workload) NewWorkerJoinToken(ctx context.Context) (string, error) {
+func (w *Workload) NewWorkerJoinToken(ctx context.Context, name string) (string, error) {
 	// Accept any hostname by passing an empty string
 	// Some infrastructures will have machines where hostname and machine name do not match by design (e.g. AWS)
-	return w.requestJoinToken(ctx, "", true)
+	return w.requestJoinToken(ctx, name, true)
 }
 
 // requestJoinToken requests a join token from the existing control-plane nodes via the k8sd proxy.
 func (w *Workload) requestJoinToken(ctx context.Context, name string, worker bool) (string, error) {
+	if name == "" {
+		return "", fmt.Errorf("node name should not be empty")
+	}
+
+	logger := log.FromContext(ctx)
+	logger.Info("Requesting join token.", "node name", name)
+
 	request := apiv1.GetJoinTokenRequest{Name: name, Worker: worker}
 	response := &apiv1.GetJoinTokenResponse{}
 
