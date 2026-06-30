@@ -232,7 +232,7 @@ func (r *CK8sConfigReconciler) joinControlplane(ctx context.Context, scope *Scop
 		return fmt.Errorf("failed to create remote cluster client: %w", err)
 	}
 
-	joinToken, err := workloadCluster.NewControlPlaneJoinToken(ctx, scope.Config.Name)
+	joinToken, err := workloadCluster.NewControlPlaneJoinToken(ctx, scope.Config.Spec.NodeName)
 	if err != nil {
 		return fmt.Errorf("failed to request join token: %w", err)
 	}
@@ -348,7 +348,7 @@ func (r *CK8sConfigReconciler) joinWorker(ctx context.Context, scope *Scope) err
 		return fmt.Errorf("failed to create remote cluster client: %w", err)
 	}
 
-	joinToken, err := workloadCluster.NewWorkerJoinToken(ctx, scope.Config.Name)
+	joinToken, err := workloadCluster.NewWorkerJoinToken(ctx, scope.Config.Spec.NodeName)
 	if err != nil {
 		return fmt.Errorf("failed to request join token: %w", err)
 	}
