@@ -348,7 +348,7 @@ func (r *CK8sConfigReconciler) joinWorker(ctx context.Context, scope *Scope) err
 		return fmt.Errorf("failed to create remote cluster client: %w", err)
 	}
 
-	joinToken, err := workloadCluster.NewWorkerJoinToken(ctx, machine.Name)
+	joinToken, err := workloadCluster.NewWorkerJoinToken(ctx, scope.Config.Name)
 	if err != nil {
 		return fmt.Errorf("failed to request join token: %w", err)
 	}
