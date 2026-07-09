@@ -26,7 +26,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/utils/ptr"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
-	expv1beta1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	expv1beta1 "sigs.k8s.io/cluster-api/exp/api/v1beta2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/config"

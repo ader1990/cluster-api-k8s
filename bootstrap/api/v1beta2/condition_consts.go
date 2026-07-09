@@ -43,7 +43,7 @@ const (
 	// Deprecated: This has been deprecated in v1beta1 and will be removed in a future version.
 	// Switch to WaitingForControlPlaneAvailableReason constant from the `sigs.k8s.io/cluster-api/api/core/v1beta2`
 	// package.
-	WaitingForControlPlaneAvailableReason = clusterv1.WaitingForControlPlaneAvailableReason
+	WaitingForControlPlaneAvailableReason = "WaitingForControlPlaneAvailableReason"
 
 	// DataSecretGenerationFailedReason (Severity=Warning) documents a CK8sConfig controller detecting
 	// an error while generating a data secret; those kind of errors are usually due to misconfigurations
