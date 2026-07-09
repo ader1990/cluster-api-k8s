@@ -19,7 +19,6 @@ package v1beta2
 import (
 	"time"
 
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
@@ -99,7 +98,7 @@ type CK8sControlPlaneMachineTemplate struct {
 	ObjectMeta clusterv1.ObjectMeta `json:"metadata,omitempty"`
 	// InfrastructureRef is a required reference to a custom resource
 	// offered by an infrastructure provider.
-	InfrastructureRef corev1.ObjectReference `json:"infrastructureTemplate"`
+	InfrastructureRef clusterv1.ContractVersionedObjectReference `json:"infrastructureTemplate"`
 	// NodeDrainTimeout is the total amount of time that the controller will spend on draining a controlplane node
 	// The default value is 0, meaning that the node can be drained without any time limitations.
 	// NOTE: NodeDrainTimeout is different from `kubectl drain --timeout`

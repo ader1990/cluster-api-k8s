@@ -92,12 +92,20 @@ func NewControlPlane(ctx context.Context, client client.Client, cluster *cluster
 	}, nil
 }
 
-// FailureDomains returns a slice of failure domain objects synced from the infrastructure provider into Cluster.Status.
-func (c *ControlPlane) FailureDomains() clusterv1.FailureDomains {
+func (c *ControlPlane) FailureDomains() []clusterv1.FailureDomain {
 	if c.Cluster.Status.FailureDomains == nil {
-		return clusterv1.FailureDomains{}
+		return nil
 	}
-	return c.Cluster.Status.FailureDomains
+
+	var res []clusterv1.FailureDomain
+
+	for _, spec := range c.Cluster.Status.FailureDomains {
+		if ptr.Deref(spec.ControlPlane, false) {
+			res = append(res, spec)
+		}
+	}
+
+	return res
 }
 
 // Version returns the CK8sControlPlane's version.
