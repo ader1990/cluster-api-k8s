@@ -74,10 +74,6 @@ func defaultCK8sControlPlaneSpec(s *CK8sControlPlaneSpec, namespace string) {
 		s.Replicas = &replicas
 	}
 
-	if s.MachineTemplate.InfrastructureRef.Namespace == "" {
-		s.MachineTemplate.InfrastructureRef.Namespace = namespace
-	}
-
 	s.RolloutStrategy = defaultRolloutStrategy(s.RolloutStrategy)
 }
 
