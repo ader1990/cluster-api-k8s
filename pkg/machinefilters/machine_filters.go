@@ -76,10 +76,10 @@ func MatchesKubernetesVersion(kubernetesVersion string) Func {
 		if machine == nil {
 			return false
 		}
-		if machine.Spec.Version == nil {
+		if machine.Spec.Version == "" {
 			return false
 		}
-		return strings.TrimPrefix(*machine.Spec.Version, "v") == strings.TrimPrefix(kubernetesVersion, "v")
+		return strings.TrimPrefix(string(machine.Spec.Version), "v") == strings.TrimPrefix(kubernetesVersion, "v")
 	}
 }
 
@@ -88,13 +88,6 @@ func MatchesCK8sBootstrapConfig(machineConfigs map[string]*bootstrapv1.CK8sConfi
 	return func(machine *clusterv1.Machine) bool {
 		if machine == nil {
 			return false
-		}
-
-		bootstrapRef := machine.Spec.Bootstrap.ConfigRef
-		if bootstrapRef == nil {
-			// Missing bootstrap reference should not be considered as unmatching.
-			// This is a safety precaution to avoid selecting machines that are broken, which in the future should be remediated separately.
-			return true
 		}
 
 		machineConfig, found := machineConfigs[machine.Name]
