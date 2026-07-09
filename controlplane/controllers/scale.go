@@ -290,7 +290,7 @@ func (r *CK8sControlPlaneReconciler) cloneConfigsAndGenerateMachine(ctx context.
 	return nil
 }
 
-func (r *CK8sControlPlaneReconciler) cleanupFromGeneration(ctx context.Context, remoteRefs ...*corev1.ObjectReference) error {
+func (r *CK8sControlPlaneReconciler) cleanupFromGeneration(ctx context.Context, remoteRefs ...*clusterv1.ContractVersionedObjectReference) error {
 	var errs []error
 
 	for _, ref := range remoteRefs {
@@ -310,7 +310,7 @@ func (r *CK8sControlPlaneReconciler) cleanupFromGeneration(ctx context.Context, 
 	return kerrors.NewAggregate(errs)
 }
 
-func (r *CK8sControlPlaneReconciler) generateCK8sConfig(ctx context.Context, kcp *controlplanev1.CK8sControlPlane, cluster *clusterv1.Cluster, spec *bootstrapv1.CK8sConfigSpec) (*corev1.ObjectReference, error) {
+func (r *CK8sControlPlaneReconciler) generateCK8sConfig(ctx context.Context, kcp *controlplanev1.CK8sControlPlane, cluster *clusterv1.Cluster, spec *bootstrapv1.CK8sConfigSpec) (*clusterv1.ContractVersionedObjectReference, error) {
 	// Create an owner reference without a controller reference because the owning controller is the machine controller
 	owner := metav1.OwnerReference{
 		APIVersion: controlplanev1.GroupVersion.String(),
@@ -333,7 +333,7 @@ func (r *CK8sControlPlaneReconciler) generateCK8sConfig(ctx context.Context, kcp
 		return nil, fmt.Errorf("failed to create bootstrap configuration: %w", err)
 	}
 
-	bootstrapRef := &corev1.ObjectReference{
+	bootstrapRef := &clusterv1.ContractVersionedObjectReference{
 		APIVersion: bootstrapv1.GroupVersion.String(),
 		Kind:       "CK8sConfig",
 		Name:       bootstrapConfig.GetName(),
@@ -344,7 +344,7 @@ func (r *CK8sControlPlaneReconciler) generateCK8sConfig(ctx context.Context, kcp
 	return bootstrapRef, nil
 }
 
-func (r *CK8sControlPlaneReconciler) generateMachine(ctx context.Context, kcp *controlplanev1.CK8sControlPlane, cluster *clusterv1.Cluster, infraRef, bootstrapRef *corev1.ObjectReference, failureDomain *string) error {
+func (r *CK8sControlPlaneReconciler) generateMachine(ctx context.Context, kcp *controlplanev1.CK8sControlPlane, cluster *clusterv1.Cluster, infraRef, bootstrapRef *clusterv1.ContractVersionedObjectReference, failureDomain *string) error {
 	machine := &clusterv1.Machine{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      names.SimpleNameGenerator.GenerateName(kcp.Name + "-"),

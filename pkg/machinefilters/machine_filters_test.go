@@ -100,7 +100,7 @@ func TestMatchesCK8sBootstrapConfig(t *testing.T) {
 			},
 			Spec: clusterv1.MachineSpec{
 				Bootstrap: clusterv1.Bootstrap{
-					ConfigRef: &corev1.ObjectReference{
+					ConfigRef: &clusterv1.ContractVersionedObjectReference{
 						Kind:       "CK8sConfig",
 						Namespace:  "default",
 						Name:       "test",
@@ -160,7 +160,7 @@ func TestMatchesCK8sBootstrapConfig(t *testing.T) {
 			},
 			Spec: clusterv1.MachineSpec{
 				Bootstrap: clusterv1.Bootstrap{
-					ConfigRef: &corev1.ObjectReference{
+					ConfigRef: &clusterv1.ContractVersionedObjectReference{
 						Kind:       "CK8sConfig",
 						Namespace:  "default",
 						Name:       "test",
@@ -226,7 +226,7 @@ func TestMatchesCK8sBootstrapConfig(t *testing.T) {
 			},
 			Spec: clusterv1.MachineSpec{
 				Bootstrap: clusterv1.Bootstrap{
-					ConfigRef: &corev1.ObjectReference{
+					ConfigRef: &clusterv1.ContractVersionedObjectReference{
 						Kind:       "CK8sConfig",
 						Namespace:  "default",
 						Name:       "test",

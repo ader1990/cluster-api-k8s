@@ -114,7 +114,7 @@ func (c *ControlPlane) Version() *string {
 }
 
 // InfrastructureTemplate returns the CK8sControlPlane's infrastructure template.
-func (c *ControlPlane) InfrastructureTemplate() *corev1.ObjectReference {
+func (c *ControlPlane) InfrastructureTemplate() *clusterv1.ContractVersionedObjectReference {
 	return &c.KCP.Spec.MachineTemplate.InfrastructureRef
 }
 
@@ -223,7 +223,7 @@ func ControlPlaneLabelsForCluster(clusterName string, machineTemplate controlpla
 }
 
 // NewMachine returns a machine configured to be a part of the control plane.
-func (c *ControlPlane) NewMachine(infraRef, bootstrapRef *corev1.ObjectReference, failureDomain *string) *clusterv1.Machine {
+func (c *ControlPlane) NewMachine(infraRef, bootstrapRef *clusterv1.ContractVersionedObjectReference, failureDomain *string) *clusterv1.Machine {
 	return &clusterv1.Machine{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      names.SimpleNameGenerator.GenerateName(c.KCP.Name + "-"),
