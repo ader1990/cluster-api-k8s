@@ -34,7 +34,6 @@ import (
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/collections"
 	"sigs.k8s.io/cluster-api/util/conditions"
-	v1beta1conditions "sigs.k8s.io/cluster-api/util/conditions/deprecated/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	bootstrapv1 "github.com/canonical/cluster-api-k8s/bootstrap/api/v1beta2"
@@ -206,16 +205,17 @@ loopmachines:
 	return ctrl.Result{}, nil
 }
 
-func preflightCheckCondition(kind string, obj conditions.Getter, condition v1beta1conditions.ConditionType) error {
-	c := conditions.Get(obj, condition)
+func preflightCheckCondition(kind string, obj conditions.Getter, condition clusterv1.ConditionType) error {
+	c := conditions.Get(obj, string(condition))
+	objName := obj.(metav1.ObjectMetaAccessor).GetObjectMeta().GetName()
 	if c == nil {
-		return fmt.Errorf("%s %s does not have %s condition: %w", kind, obj.GetName(), condition, ErrPreConditionFailed)
+		return fmt.Errorf("%s %s does not have %s condition: %w", kind, objName, condition, ErrPreConditionFailed)
 	}
-	if c.Status == v1beta1conditions.ConditionFalse {
-		return fmt.Errorf("%s %s reports %s condition is false (%s, %s): %w", kind, obj.GetName(), condition, c.Severity, c.Message, ErrPreConditionFailed)
+	if c.Status == metav1.ConditionFalse {
+		return fmt.Errorf("%s %s reports %s condition is false (%s, %s): %w", kind, objName, condition, c.Reason, c.Message, ErrPreConditionFailed)
 	}
-	if c.Status == v1beta1conditions.ConditionUnknown {
-		return fmt.Errorf("%s %s reports %s condition is unknown (%s): %w", kind, obj.GetName(), condition, c.Message, ErrPreConditionFailed)
+	if c.Status == metav1.ConditionUnknown {
+		return fmt.Errorf("%s %s reports %s condition is unknown (%s): %w", kind, objName, condition, c.Message, ErrPreConditionFailed)
 	}
 
 	return nil
