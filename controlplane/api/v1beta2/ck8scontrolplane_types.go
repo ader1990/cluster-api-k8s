@@ -290,7 +290,15 @@ func (in *CK8sControlPlane) GetConditions() clusterv1.Conditions {
 	return in.Status.Conditions
 }
 
+func (in *CK8sControlPlane) GetV1Beta1Conditions() clusterv1.Conditions {
+	return in.Status.Conditions
+}
+
 func (in *CK8sControlPlane) SetConditions(conditions clusterv1.Conditions) {
+	in.Status.Conditions = conditions
+}
+
+func (in *CK8sControlPlane) SetV1Beta1Conditions(conditions clusterv1.Conditions) {
 	in.Status.Conditions = conditions
 }
 
