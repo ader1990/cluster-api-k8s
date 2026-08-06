@@ -234,7 +234,7 @@ func (in *CK8sConfigStatus) DeepCopyInto(out *CK8sConfigStatus) {
 	}
 	if in.Conditions != nil {
 		in, out := &in.Conditions, &out.Conditions
-		*out = make(v1beta1.Conditions, len(*in))
+		*out = make(v1beta2.Conditions, len(*in))
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
