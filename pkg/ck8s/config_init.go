@@ -110,18 +110,14 @@ func GenerateInitControlPlaneConfig(cfg InitControlPlaneConfig) (apiv1.Bootstrap
 
 	// networking
 	if cfg.ClusterNetwork != nil {
-		if v := ptr.Deref(cfg.ClusterNetwork.APIServerPort, 0); v != 0 {
+		if v := cfg.ClusterNetwork.APIServerPort; v != 0 {
 			out.SecurePort = ptr.To(int(v))
 		}
-		if pods := cfg.ClusterNetwork.Pods; pods != nil {
-			if len(pods.CIDRBlocks) > 0 {
-				out.PodCIDR = ptr.To(strings.Join(pods.CIDRBlocks, ","))
-			}
+		if len(cfg.ClusterNetwork.Pods.CIDRBlocks) > 0 {
+			out.PodCIDR = ptr.To(strings.Join(cfg.ClusterNetwork.Pods.CIDRBlocks, ","))
 		}
-		if services := cfg.ClusterNetwork.Services; services != nil {
-			if len(services.CIDRBlocks) > 0 {
-				out.ServiceCIDR = ptr.To(strings.Join(services.CIDRBlocks, ","))
-			}
+		if len(cfg.ClusterNetwork.Services.CIDRBlocks) > 0 {
+			out.ServiceCIDR = ptr.To(strings.Join(cfg.ClusterNetwork.Services.CIDRBlocks, ","))
 		}
 		if v := cfg.ClusterNetwork.ServiceDomain; v != "" {
 			out.ClusterConfig.DNS.ClusterDomain = ptr.To(v)
