@@ -145,21 +145,21 @@ func (r *CK8sControlPlaneReconciler) reconcileUnhealthyMachines(ctx context.Cont
 		// The cluster MUST have more than one replica, because this is the smallest cluster size that allows any etcd failure tolerance.
 		if controlPlane.Machines.Len() <= 1 {
 			log.Info("A control plane machine needs remediation, but the number of current replicas is less or equal to 1. Skipping remediation", "Replicas", controlPlane.Machines.Len())
-			v1beta1conditions.MarkFalse(machineToBeRemediated, clusterv1.MachineOwnerRemediatedCondition, clusterv1.RemediationInProgressReason, clusterv1.ConditionSeverityWarning, "KCP can't remediate if current replicas are less or equal to 1")
+			v1beta1conditions.MarkFalse(machineToBeRemediated, clusterv1.MachineOwnerRemediatedCondition, clusterv1.RemediationInProgressV1Beta1Reason, clusterv1.ConditionSeverityWarning, "KCP can't remediate if current replicas are less or equal to 1")
 			return ctrl.Result{}, nil
 		}
 
 		// The cluster MUST NOT have healthy machines still being provisioned. This rule prevents KCP taking actions while the cluster is in a transitional state.
 		if controlPlane.HasHealthyMachineStillProvisioning() {
 			log.Info("A control plane machine needs remediation, but there are other control-plane machines being provisioned. Skipping remediation")
-			v1beta1conditions.MarkFalse(machineToBeRemediated, clusterv1.MachineOwnerRemediatedCondition, clusterv1.RemediationInProgressReason, clusterv1.ConditionSeverityWarning, "KCP waiting for control plane machine provisioning to complete before triggering remediation")
+			v1beta1conditions.MarkFalse(machineToBeRemediated, clusterv1.MachineOwnerRemediatedCondition, clusterv1.RemediationInProgressV1Beta1Reason, clusterv1.ConditionSeverityWarning, "KCP waiting for control plane machine provisioning to complete before triggering remediation")
 			return ctrl.Result{}, nil
 		}
 
 		// The cluster MUST have no machines with a deletion timestamp. This rule prevents KCP taking actions while the cluster is in a transitional state.
 		if controlPlane.HasDeletingMachine() {
 			log.Info("A control plane machine needs remediation, but there are other control-plane machines being deleted. Skipping remediation")
-			v1beta1conditions.MarkFalse(machineToBeRemediated, clusterv1.MachineOwnerRemediatedCondition, clusterv1.RemediationInProgressReason, clusterv1.ConditionSeverityWarning, "KCP waiting for control plane machine deletion to complete before triggering remediation")
+			v1beta1conditions.MarkFalse(machineToBeRemediated, clusterv1.MachineOwnerRemediatedCondition, clusterv1.RemediationInProgressV1Beta1Reason, clusterv1.ConditionSeverityWarning, "KCP waiting for control plane machine deletion to complete before triggering remediation")
 			return ctrl.Result{}, nil
 		}
 	}
@@ -183,13 +183,13 @@ func (r *CK8sControlPlaneReconciler) reconcileUnhealthyMachines(ctx context.Cont
 
 	// Delete the machine
 	if err := r.Delete(ctx, machineToBeRemediated); err != nil {
-		v1beta1conditions.MarkFalse(machineToBeRemediated, clusterv1.MachineOwnerRemediatedCondition, clusterv1.WaitingForRemediationReason, clusterv1.ConditionSeverityError, "%s", err.Error())
+		v1beta1conditions.MarkFalse(machineToBeRemediated, clusterv1.MachineOwnerRemediatedCondition, clusterv1.WaitingForRemediationV1Beta1Reason, clusterv1.ConditionSeverityError, "%s", err.Error())
 		return ctrl.Result{}, fmt.Errorf("failed to delete unhealthy machine %s: %w", machineToBeRemediated.Name, err)
 	}
 
 	// Surface the operation is in progress.
 	log.Info("Remediating unhealthy machine")
-	v1beta1conditions.MarkFalse(machineToBeRemediated, clusterv1.MachineOwnerRemediatedCondition, clusterv1.RemediationInProgressReason, clusterv1.ConditionSeverityWarning, "")
+	v1beta1conditions.MarkFalse(machineToBeRemediated, clusterv1.MachineOwnerRemediatedCondition, clusterv1.RemediationInProgressV1Beta1Reason, clusterv1.ConditionSeverityWarning, "")
 
 	// Prepare the info for tracking the remediation progress into the RemediationInProgressAnnotation.
 	remediationInProgressValue, err := remediationInProgressData.Marshal()
@@ -285,7 +285,7 @@ func (r *CK8sControlPlaneReconciler) checkRetryLimits(log logr.Logger, machineTo
 	// Check if remediation can happen because retryPeriod is passed.
 	if lastRemediationTime.Add(retryPeriod).After(reconciliationTime) {
 		log.Info(fmt.Sprintf("A control plane machine needs remediation, but the operation already failed in the latest %s. Skipping remediation", retryPeriod))
-		v1beta1conditions.MarkFalse(machineToBeRemediated, clusterv1.MachineOwnerRemediatedCondition, clusterv1.RemediationInProgressReason, clusterv1.ConditionSeverityWarning, "KCP can't remediate this machine because the operation already failed in the latest %s (RetryPeriod)", retryPeriod)
+		v1beta1conditions.MarkFalse(machineToBeRemediated, clusterv1.MachineOwnerRemediatedCondition, clusterv1.RemediationInProgressV1Beta1Reason, clusterv1.ConditionSeverityWarning, "KCP can't remediate this machine because the operation already failed in the latest %s (RetryPeriod)", retryPeriod)
 		return remediationInProgressData, false, nil
 	}
 
@@ -294,7 +294,7 @@ func (r *CK8sControlPlaneReconciler) checkRetryLimits(log logr.Logger, machineTo
 		maxRetry := int(*controlPlane.KCP.Spec.RemediationStrategy.MaxRetry)
 		if remediationInProgressData.RetryCount >= maxRetry {
 			log.Info(fmt.Sprintf("A control plane machine needs remediation, but the operation already failed %d times (MaxRetry %d). Skipping remediation", remediationInProgressData.RetryCount, maxRetry))
-			v1beta1conditions.MarkFalse(machineToBeRemediated, clusterv1.MachineOwnerRemediatedCondition, clusterv1.RemediationInProgressReason, clusterv1.ConditionSeverityWarning, "KCP can't remediate this machine because the operation already failed %d times (MaxRetry)", maxRetry)
+			v1beta1conditions.MarkFalse(machineToBeRemediated, clusterv1.MachineOwnerRemediatedCondition, clusterv1.RemediationInProgressV1Beta1Reason, clusterv1.ConditionSeverityWarning, "KCP can't remediate this machine because the operation already failed %d times (MaxRetry)", maxRetry)
 			return remediationInProgressData, false, nil
 		}
 	}
