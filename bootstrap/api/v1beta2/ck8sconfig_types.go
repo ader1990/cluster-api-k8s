@@ -18,7 +18,7 @@ package v1beta2
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 )
 
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
@@ -439,4 +439,11 @@ type SecretRef struct {
 
 func init() {
 	SchemeBuilder.Register(&CK8sConfig{}, &CK8sConfigList{})
+}
+
+func (in *CK8sConfig) GetV1Beta1Conditions() clusterv1.Conditions {
+	return in.Status.Conditions
+}
+func (in *CK8sConfig) SetV1Beta1Conditions(conditions clusterv1.Conditions) {
+	in.Status.Conditions = conditions
 }
