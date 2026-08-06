@@ -440,3 +440,10 @@ type SecretRef struct {
 func init() {
 	SchemeBuilder.Register(&CK8sConfig{}, &CK8sConfigList{})
 }
+
+func (in *CK8sConfig) GetV1Beta1Conditions() clusterv1.Conditions {
+	return in.Status.Conditions
+}
+func (in *CK8sConfig) SetV1Beta1Conditions(conditions clusterv1.Conditions) {
+	in.Status.Conditions = conditions
+}

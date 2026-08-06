@@ -78,7 +78,7 @@ func (r *CertificatesReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		return ctrl.Result{}, err
 	}
 
-	if m.Status.NodeRef == nil {
+	if m.Status.NodeRef.Name == "" {
 		// If the machine does not have a node ref, we requeue the request to retry.
 		return ctrl.Result{RequeueAfter: 5 * time.Second}, nil
 	}
