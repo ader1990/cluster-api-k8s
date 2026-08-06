@@ -27,6 +27,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apiserver/pkg/storage/names"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
@@ -48,7 +49,7 @@ func (r *CK8sControlPlaneReconciler) initializeControlPlane(ctx context.Context,
 
 	// Perform an uncached read of all the owned machines. This check is in place to make sure
 	// that the controller cache is not misbehaving and we end up initializing the cluster more than once.
-	ownedMachines, err := r.managementClusterUncached.GetMachinesForCluster(ctx, util.ObjectKey(cluster), collections.OwnedMachines(kcp))
+	ownedMachines, err := r.managementClusterUncached.GetMachinesForCluster(ctx, util.ObjectKey(cluster), collections.OwnedMachines(kcp, schema.GroupKind{Group: controlplanev1.GroupVersion.Group, Kind: "CK8sControlPlane"}))
 	if err != nil {
 		logger.Error(err, "failed to perform an uncached read of control plane machines for cluster")
 		return ctrl.Result{}, err
@@ -127,7 +128,7 @@ func (r *CK8sControlPlaneReconciler) scaleDownControlPlane(
 		return ctrl.Result{}, fmt.Errorf("failed to create client to workload cluster: %w", err)
 	}
 
-	if machineToDelete.Status.NodeRef.Name != "" && machineToDelete.Status.NodeRef.Name != "" {
+	if machineToDelete.Status.NodeRef.Name != "" {
 		// TODO: If the node is not part of the microcluster, this may still return an error. We should catch that case,
 		// and proceed with the machine removal.
 		if err := workloadCluster.RemoveMachineFromCluster(ctx, machineToDelete); err != nil {

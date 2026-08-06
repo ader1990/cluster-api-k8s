@@ -181,7 +181,7 @@ func (r *CK8sControlPlaneReconciler) reconcileDelete(ctx context.Context, cluste
 	if err != nil {
 		return reconcile.Result{}, err
 	}
-	ownedMachines := allMachines.Filter(collections.OwnedMachines(kcp))
+	ownedMachines := allMachines.Filter(collections.OwnedMachines(kcp, controlplanev1.GroupVersion.WithKind("CK8sControlPlane").GroupKind()))
 
 	// If no control plane machines remain, remove the finalizer
 	if len(ownedMachines) == 0 {
@@ -322,7 +322,7 @@ func (r *CK8sControlPlaneReconciler) updateStatus(ctx context.Context, kcp *cont
 	// This is necessary for CRDs including scale subresources.
 	kcp.Status.Selector = selector.String()
 
-	ownedMachines, err := r.managementCluster.GetMachinesForCluster(ctx, util.ObjectKey(cluster), collections.OwnedMachines(kcp))
+	ownedMachines, err := r.managementCluster.GetMachinesForCluster(ctx, util.ObjectKey(cluster), collections.OwnedMachines(kcp, controlplanev1.GroupVersion.WithKind("CK8sControlPlane").GroupKind()))
 	if err != nil {
 		return fmt.Errorf("failed to get list of owned machines: %w", err)
 	}
@@ -492,7 +492,7 @@ func (r *CK8sControlPlaneReconciler) reconcile(ctx context.Context, cluster *clu
 		return reconcile.Result{}, err
 	}
 
-	ownedMachines := controlPlaneMachines.Filter(collections.OwnedMachines(kcp))
+	ownedMachines := controlPlaneMachines.Filter(collections.OwnedMachines(kcp, controlplanev1.GroupVersion.WithKind("CK8sControlPlane").GroupKind()))
 	if len(ownedMachines) != len(controlPlaneMachines) {
 		logger.Info("Not all control plane machines are owned by this CK8sControlPlane, refusing to operate in mixed management mode")
 		return reconcile.Result{}, nil
@@ -630,7 +630,7 @@ func (r *CK8sControlPlaneReconciler) reconcileKubeconfig(ctx context.Context, cl
 	}
 
 	// only do rotation on owned secrets
-	if !util.IsControlledBy(configSecret, kcp) {
+	if !util.IsControlledBy(configSecret, kcp, controlplanev1.GroupVersion.WithKind("CK8sControlPlane").GroupKind()) {
 		return reconcile.Result{}, nil
 	}
 
