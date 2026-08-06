@@ -5,7 +5,6 @@ import (
 
 	. "github.com/onsi/gomega"
 	"google.golang.org/protobuf/proto"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
@@ -51,11 +50,9 @@ func TestMatchesCK8sBootstrapConfig(t *testing.T) {
 			},
 			Spec: clusterv1.MachineSpec{
 				Bootstrap: clusterv1.Bootstrap{
-					ConfigRef: &corev1.ObjectReference{
-						Kind:       "CK8sConfig",
-						Namespace:  "default",
-						Name:       "test",
-						APIVersion: bootstrapv1.GroupVersion.String(),
+					ConfigRef: clusterv1.ContractVersionedObjectReference{
+						Kind: "CK8sConfig",
+						Name: "test",
 					},
 				},
 			},
@@ -100,11 +97,9 @@ func TestMatchesCK8sBootstrapConfig(t *testing.T) {
 			},
 			Spec: clusterv1.MachineSpec{
 				Bootstrap: clusterv1.Bootstrap{
-					ConfigRef: &corev1.ObjectReference{
-						Kind:       "CK8sConfig",
-						Namespace:  "default",
-						Name:       "test",
-						APIVersion: bootstrapv1.GroupVersion.String(),
+					ConfigRef: clusterv1.ContractVersionedObjectReference{
+						Kind: "CK8sConfig",
+						Name: "test",
 					},
 				},
 			},
@@ -160,11 +155,9 @@ func TestMatchesCK8sBootstrapConfig(t *testing.T) {
 			},
 			Spec: clusterv1.MachineSpec{
 				Bootstrap: clusterv1.Bootstrap{
-					ConfigRef: &corev1.ObjectReference{
-						Kind:       "CK8sConfig",
-						Namespace:  "default",
-						Name:       "test",
-						APIVersion: bootstrapv1.GroupVersion.String(),
+					ConfigRef: clusterv1.ContractVersionedObjectReference{
+						Kind: "CK8sConfig",
+						Name: "test",
 					},
 				},
 			},
@@ -226,11 +219,9 @@ func TestMatchesCK8sBootstrapConfig(t *testing.T) {
 			},
 			Spec: clusterv1.MachineSpec{
 				Bootstrap: clusterv1.Bootstrap{
-					ConfigRef: &corev1.ObjectReference{
-						Kind:       "CK8sConfig",
-						Namespace:  "default",
-						Name:       "test",
-						APIVersion: bootstrapv1.GroupVersion.String(),
+					ConfigRef: clusterv1.ContractVersionedObjectReference{
+						Kind: "CK8sConfig",
+						Name: "test",
 					},
 				},
 			},
