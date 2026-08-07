@@ -45,7 +45,7 @@ type ClusterUpgradeSpecInput struct {
 	BootstrapClusterProxy framework.ClusterProxy
 	ArtifactFolder        string
 	SkipCleanup           bool
-	ControlPlaneWaiters   ControlPlaneWaiters
+	ControlPlaneWaiters   clusterctl.ControlPlaneWaiters
 
 	// InfrastructureProviders specifies the infrastructure to use for clusterctl
 	// operations (Example: get cluster templates).
@@ -81,12 +81,11 @@ func ClusterUpgradeSpec(ctx context.Context, inputGetter func() ClusterUpgradeSp
 		controlPlaneMachineCount int64
 		workerMachineCount       int64
 
-		result              *ApplyClusterTemplateAndWaitResult
+		result              clusterctl.ApplyClusterTemplateAndWaitResult
 		clusterName         string
 		clusterctlLogFolder string
 
-		flavor                      string
-		maxControlPlaneMachineCount int64
+		flavor string
 	)
 
 	BeforeEach(func() {
@@ -116,14 +115,6 @@ func ClusterUpgradeSpec(ctx context.Context, inputGetter func() ClusterUpgradeSp
 
 		// Default flavor with the default MaxSurge=1 (we expect to see at most 1 extra Machine).
 		flavor = flavorUpgrades
-		maxControlPlaneMachineCount = controlPlaneMachineCount + 1
-		if input.Flavor != nil {
-			flavor = *input.Flavor
-			if flavor == flavorUpgradesMaxSurge0 {
-				// MaxSurge=0 (we should see no additional Machine).
-				maxControlPlaneMachineCount = controlPlaneMachineCount
-			}
-		}
 
 		// Setup a Namespace where to host objects for this spec and create a watcher for the namespace events.
 		namespace, cancelWatches = setupSpecNamespace(ctx, specName, input.BootstrapClusterProxy, input.ArtifactFolder)
@@ -131,7 +122,7 @@ func ClusterUpgradeSpec(ctx context.Context, inputGetter func() ClusterUpgradeSp
 		// Create LXC secret for LXD provider if needed
 		createLXCSecret(ctx, input.BootstrapClusterProxy, input.E2EConfig, namespace.Name)
 
-		result = new(ApplyClusterTemplateAndWaitResult)
+		result = clusterctl.ApplyClusterTemplateAndWaitResult{}
 
 		clusterctlLogFolder = filepath.Join(input.ArtifactFolder, "clusters", input.BootstrapClusterProxy.GetName())
 	})
@@ -153,7 +144,7 @@ func ClusterUpgradeSpec(ctx context.Context, inputGetter func() ClusterUpgradeSp
 
 	It("Should create and upgrade a workload cluster", func() {
 		By("Creating a workload cluster")
-		ApplyClusterTemplateAndWait(ctx, ApplyClusterTemplateAndWaitInput{
+		clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
 			ClusterProxy: input.BootstrapClusterProxy,
 			ConfigCluster: clusterctl.ConfigClusterInput{
 				LogFolder:                clusterctlLogFolder,
@@ -163,7 +154,7 @@ func ClusterUpgradeSpec(ctx context.Context, inputGetter func() ClusterUpgradeSp
 				Flavor:                   flavor,
 				Namespace:                namespace.Name,
 				ClusterName:              clusterName,
-				KubernetesVersion:        input.E2EConfig.GetVariable(KubernetesVersion),
+				KubernetesVersion:        input.E2EConfig.GetVariableOrEmpty(KubernetesVersion),
 				ControlPlaneMachineCount: &controlPlaneMachineCount,
 				WorkerMachineCount:       &workerMachineCount,
 			},
@@ -171,15 +162,14 @@ func ClusterUpgradeSpec(ctx context.Context, inputGetter func() ClusterUpgradeSp
 			WaitForClusterIntervals:      input.E2EConfig.GetIntervals(specName, "wait-cluster"),
 			WaitForControlPlaneIntervals: input.E2EConfig.GetIntervals(specName, "wait-control-plane"),
 			WaitForMachineDeployments:    input.E2EConfig.GetIntervals(specName, "wait-worker-nodes"),
-		}, result)
+		}, &result)
 
 		By("Upgrading the Kubernetes control-plane")
-		UpgradeControlPlaneAndWaitForUpgrade(ctx, UpgradeControlPlaneAndWaitForUpgradeInput{
+		framework.UpgradeControlPlaneAndWaitForUpgrade(ctx, framework.UpgradeControlPlaneAndWaitForUpgradeInput{
 			ClusterProxy:                input.BootstrapClusterProxy,
 			Cluster:                     result.Cluster,
 			ControlPlane:                result.ControlPlane,
-			MaxControlPlaneMachineCount: maxControlPlaneMachineCount,
-			KubernetesUpgradeVersion:    input.E2EConfig.GetVariable(KubernetesVersionUpgradeTo),
+			KubernetesUpgradeVersion:    input.E2EConfig.GetVariableOrEmpty(KubernetesVersionUpgradeTo),
 			WaitForMachinesToBeUpgraded: input.E2EConfig.GetIntervals(specName, "wait-machine-upgrade"),
 		})
 
@@ -187,7 +177,7 @@ func ClusterUpgradeSpec(ctx context.Context, inputGetter func() ClusterUpgradeSp
 		framework.UpgradeMachineDeploymentsAndWait(ctx, framework.UpgradeMachineDeploymentsAndWaitInput{
 			ClusterProxy:                input.BootstrapClusterProxy,
 			Cluster:                     result.Cluster,
-			UpgradeVersion:              input.E2EConfig.GetVariable(KubernetesVersionUpgradeTo),
+			UpgradeVersion:              input.E2EConfig.GetVariableOrEmpty(KubernetesVersionUpgradeTo),
 			MachineDeployments:          result.MachineDeployments,
 			WaitForMachinesToBeUpgraded: input.E2EConfig.GetIntervals(specName, "wait-worker-nodes"),
 		})
@@ -197,7 +187,7 @@ func ClusterUpgradeSpec(ctx context.Context, inputGetter func() ClusterUpgradeSp
 		workloadClient := workloadProxy.GetClient()
 		WaitForNodesReady(ctx, WaitForNodesReadyInput{
 			Lister:            workloadClient,
-			KubernetesVersion: input.E2EConfig.GetVariable(KubernetesVersionUpgradeTo),
+			KubernetesVersion: input.E2EConfig.GetVariableOrEmpty(KubernetesVersionUpgradeTo),
 			Count:             int(result.ExpectedTotalNodes()),
 			WaitForNodesReady: input.E2EConfig.GetIntervals(specName, "wait-nodes-ready"),
 		})
