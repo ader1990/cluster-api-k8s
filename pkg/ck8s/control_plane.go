@@ -239,6 +239,11 @@ func ControlPlaneLabelsForCluster(clusterName string, machineTemplate controlpla
 // NewMachine returns a machine configured to be a part of the control plane.
 func (c *ControlPlane) NewMachine(infraRef, bootstrapRef *corev1.ObjectReference, failureDomain *string) *clusterv1.Machine {
 	return &clusterv1.Machine{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: clusterv1.GroupVersion.String(),
+			Kind:       "Machine",
+		},
+
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      names.SimpleNameGenerator.GenerateName(c.KCP.Name + "-"),
 			Namespace: c.KCP.Namespace,
@@ -251,13 +256,15 @@ func (c *ControlPlane) NewMachine(infraRef, bootstrapRef *corev1.ObjectReference
 			ClusterName: c.Cluster.Name,
 			Version:     *c.Version(),
 			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
-				Kind: infraRef.Kind,
-				Name: infraRef.Name,
+				Kind:     infraRef.Kind,
+				Name:     infraRef.Name,
+				APIGroup: infraRef.GroupVersionKind().Group,
 			},
 			Bootstrap: clusterv1.Bootstrap{
 				ConfigRef: clusterv1.ContractVersionedObjectReference{
-					Kind: bootstrapRef.Kind,
-					Name: bootstrapRef.Name,
+					Kind:     bootstrapRef.Kind,
+					Name:     bootstrapRef.Name,
+					APIGroup: bootstrapv1.GroupVersion.Group,
 				},
 			},
 			FailureDomain: *failureDomain,
