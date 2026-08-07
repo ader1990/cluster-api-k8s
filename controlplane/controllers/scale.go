@@ -368,13 +368,15 @@ func (r *CK8sControlPlaneReconciler) generateMachine(ctx context.Context, kcp *c
 			ClusterName: cluster.Name,
 			Version:     kcp.Spec.Version,
 			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
-				Kind: infraRef.Kind,
-				Name: infraRef.Name,
+				Kind:     infraRef.Kind,
+				Name:     infraRef.Name,
+				APIGroup: infraRef.GroupVersionKind().Group,
 			},
 			Bootstrap: clusterv1.Bootstrap{
 				ConfigRef: clusterv1.ContractVersionedObjectReference{
-					Kind: bootstrapRef.Kind,
-					Name: bootstrapRef.Name,
+					Kind:     bootstrapRef.Kind,
+					Name:     bootstrapRef.Name,
+					APIGroup: bootstrapv1.GroupVersion.Group,
 				},
 			},
 			FailureDomain: *failureDomain,
