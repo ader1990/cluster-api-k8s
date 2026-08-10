@@ -312,23 +312,22 @@ func (c *ControlPlane) UpToDateMachines() collections.Machines {
 	return c.Machines.Difference(c.MachinesNeedingRollout())
 }
 
-// getInfraResources fetches the external infrastructure resource for each machine in the collection and returns a map of machine.Name -> infraResource.
 func getInfraResources(ctx context.Context, cl client.Client, machines collections.Machines) (map[string]*unstructured.Unstructured, error) {
 	result := map[string]*unstructured.Unstructured{}
+
 	for _, m := range machines {
-		infraRef := corev1.ObjectReference{
-			Kind: m.Spec.InfrastructureRef.Kind,
-			Name: m.Spec.InfrastructureRef.Name,
-		}
-		infraObj, err := external.Get(ctx, cl, &infraRef)
+		infraObj, err := external.GetObjectFromContractVersionedRef(ctx, cl, m.Spec.InfrastructureRef, m.Namespace)
 		if err != nil {
 			if apierrors.IsNotFound(err) {
 				continue
 			}
-			return nil, fmt.Errorf("failed to retrieve infra obj for machine %q, %w", m.Name, err)
+
+			return nil, fmt.Errorf("failed to retrieve infra obj for machine %q: %w", m.Name, err)
 		}
+
 		result[m.Name] = infraObj
 	}
+
 	return result, nil
 }
 
