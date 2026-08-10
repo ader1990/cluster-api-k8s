@@ -38,7 +38,6 @@ metadata:
 spec:
   machineTemplate:
     infrastructureTemplate:
-      apiVersion: infrastructure.cluster.x-k8s.io/v1alpha2
       kind: LXCMachineTemplate
       name: ${CLUSTER_NAME}-control-plane
     nodeDrainTimeout: 30s

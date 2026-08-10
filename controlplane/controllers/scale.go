@@ -283,7 +283,18 @@ func (r *CK8sControlPlaneReconciler) cloneConfigsAndGenerateMachine(ctx context.
 
 	// Only proceed to generating the Machine if we haven't encountered an error
 	if len(errs) == 0 {
-		if err := r.generateMachine(ctx, kcp, cluster, infraRef, bootstrapRef, failureDomain); err != nil {
+		machineInfraRef := &clusterv1.ContractVersionedObjectReference{
+			Kind:     infraRef.Kind,
+			Name:     infraRef.Name,
+			APIGroup: infraRef.GroupVersionKind().Group,
+		}
+		machineBootstrapRef := &clusterv1.ContractVersionedObjectReference{
+			Kind:     bootstrapRef.Kind,
+			Name:     bootstrapRef.Name,
+			APIGroup: bootstrapRef.GroupVersionKind().Group,
+		}
+
+		if err := r.generateMachine(ctx, kcp, cluster, machineInfraRef, machineBootstrapRef, failureDomain); err != nil {
 			errs = append(errs, fmt.Errorf("failed to create Machine: %w", err))
 		}
 	}
@@ -354,7 +365,7 @@ func (r *CK8sControlPlaneReconciler) generateCK8sConfig(ctx context.Context, kcp
 	return bootstrapRef, nil
 }
 
-func (r *CK8sControlPlaneReconciler) generateMachine(ctx context.Context, kcp *controlplanev1.CK8sControlPlane, cluster *clusterv1.Cluster, infraRef, bootstrapRef *corev1.ObjectReference, failureDomain *string) error {
+func (r *CK8sControlPlaneReconciler) generateMachine(ctx context.Context, kcp *controlplanev1.CK8sControlPlane, cluster *clusterv1.Cluster, infraRef, bootstrapRef *clusterv1.ContractVersionedObjectReference, failureDomain *string) error {
 	machine := &clusterv1.Machine{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      names.SimpleNameGenerator.GenerateName(kcp.Name + "-"),
@@ -365,19 +376,11 @@ func (r *CK8sControlPlaneReconciler) generateMachine(ctx context.Context, kcp *c
 			},
 		},
 		Spec: clusterv1.MachineSpec{
-			ClusterName: cluster.Name,
-			Version:     kcp.Spec.Version,
-			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
-				Kind:     infraRef.Kind,
-				Name:     infraRef.Name,
-				APIGroup: infraRef.GroupVersionKind().Group,
-			},
+			ClusterName:       cluster.Name,
+			Version:           kcp.Spec.Version,
+			InfrastructureRef: *infraRef,
 			Bootstrap: clusterv1.Bootstrap{
-				ConfigRef: clusterv1.ContractVersionedObjectReference{
-					Kind:     bootstrapRef.Kind,
-					Name:     bootstrapRef.Name,
-					APIGroup: bootstrapv1.GroupVersion.Group,
-				},
+				ConfigRef: *bootstrapRef,
 			},
 			FailureDomain: *failureDomain,
 		},
