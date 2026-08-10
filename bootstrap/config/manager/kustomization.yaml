@@ -5,3 +5,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: ghcr.io/canonical/cluster-api-k8s/bootstrap-controller
+  newTag: test-upgrade-1.13.4-one-commit-10-v5
