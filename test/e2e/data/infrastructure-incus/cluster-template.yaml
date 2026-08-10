@@ -44,6 +44,9 @@ spec:
     nodeDrainTimeout: 30s
     nodeVolumeDetachTimeout: 30s
     nodeDeletionTimeout: 30s
+    metadata:
+      labels:
+        key: value
   replicas: ${CONTROL_PLANE_MACHINE_COUNT}
   version: ${KUBERNETES_VERSION}
   spec:
