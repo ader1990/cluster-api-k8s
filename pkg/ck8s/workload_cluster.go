@@ -21,7 +21,6 @@ import (
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/collections"
 	"sigs.k8s.io/cluster-api/util/conditions"
-	v1beta1conditions "sigs.k8s.io/cluster-api/util/conditions/deprecated/v1beta1"
 	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
@@ -590,7 +589,12 @@ func (w *Workload) UpdateAgentConditions(ctx context.Context, controlPlane *Cont
 		// If the machine is deleting, report all the conditions as deleting
 		if !machine.DeletionTimestamp.IsZero() {
 			for _, condition := range allMachinePodConditions {
-				v1beta1conditions.MarkFalse(machine, condition, clusterv1.DeletingReason, clusterv1.ConditionSeverityInfo, "")
+				conditions.Set(machine, metav1.Condition{
+					Type:    string(condition),
+					Status:  metav1.ConditionFalse,
+					Reason:  string(clusterv1.DeletingReason),
+					Message: "Machine is being deleted",
+				})
 			}
 			continue
 		}
@@ -600,7 +604,14 @@ func (w *Workload) UpdateAgentConditions(ctx context.Context, controlPlane *Cont
 			// NOTE: We are assuming unreachable as a temporary condition, leaving to MHC
 			// the responsibility to determine if the node is unhealthy or not.
 			for _, condition := range allMachinePodConditions {
-				v1beta1conditions.MarkUnknown(machine, condition, controlplanev1.PodInspectionFailedReason, "Node is unreachable")
+
+				conditions.Set(machine, metav1.Condition{
+					Type:    string(condition),
+					Status:  metav1.ConditionFalse,
+					Reason:  string(controlplanev1.PodMissingReason),
+					Message: "Node is missing or unreachable, unable to inspect static pods",
+				})
+
 			}
 			continue
 		}
@@ -614,17 +625,30 @@ func (w *Workload) UpdateAgentConditions(ctx context.Context, controlPlane *Cont
 		if err := w.Client.Get(ctx, nodeKey, &targetnode); err != nil {
 			// If there is an error getting the Pod, do not set any conditions.
 			if apierrors.IsNotFound(err) {
-				v1beta1conditions.MarkFalse(machine, controlplanev1.MachineAgentHealthyCondition, controlplanev1.PodMissingReason, clusterv1.ConditionSeverityError, "Node %s is missing", nodeKey.Name)
-
+				conditions.Set(machine, metav1.Condition{
+					Type:    string(controlplanev1.MachineAgentHealthyCondition),
+					Status:  metav1.ConditionUnknown,
+					Reason:  string(controlplanev1.PodInspectionFailedReason),
+					Message: "Node is unreachable",
+				})
 				return
 			}
-			v1beta1conditions.MarkUnknown(machine, controlplanev1.MachineAgentHealthyCondition, controlplanev1.PodInspectionFailedReason, "Failed to get node status")
+			conditions.Set(machine, metav1.Condition{
+				Type:    string(controlplanev1.MachineAgentHealthyCondition),
+				Status:  metav1.ConditionUnknown,
+				Reason:  string(controlplanev1.PodInspectionFailedReason),
+				Message: "Failed to get node status for node " + node.Name + ", error: " + err.Error(),
+			})
 			return
 		}
 
 		for _, condition := range targetnode.Status.Conditions {
 			if condition.Type == corev1.NodeReady && condition.Status == corev1.ConditionTrue {
-				v1beta1conditions.MarkTrue(machine, controlplanev1.MachineAgentHealthyCondition)
+				conditions.Set(machine, metav1.Condition{
+					Type:    string(condition.Type),
+					Status:  metav1.ConditionTrue,
+					Message: "Node is reachable and healthy",
+				})
 			}
 		}
 	}
@@ -644,7 +668,12 @@ func (w *Workload) UpdateAgentConditions(ctx context.Context, controlPlane *Cont
 		}
 		if !found {
 			for _, condition := range allMachinePodConditions {
-				v1beta1conditions.MarkFalse(machine, condition, controlplanev1.PodFailedReason, clusterv1.ConditionSeverityError, "Missing node")
+				conditions.Set(machine, metav1.Condition{
+					Type:    string(condition),
+					Status:  metav1.ConditionFalse,
+					Reason:  string(controlplanev1.PodFailedReason),
+					Message: "Node is missing",
+				})
 			}
 		}
 	}

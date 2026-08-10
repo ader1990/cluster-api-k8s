@@ -207,8 +207,9 @@ func (r *CK8sControlPlaneReconciler) reconcileDelete(ctx context.Context, cluste
 	if len(allMachines) != len(ownedMachines) {
 		logger.Info("Waiting for worker nodes to be deleted first")
 		conditions.Set(kcp, metav1.Condition{
-			Type:   string(controlplanev1.ResizedCondition),
-			Status: metav1.ConditionFalse,
+			Type:    string(controlplanev1.ResizedCondition),
+			Status:  metav1.ConditionFalse,
+			Message: fmt.Sprintf("Waiting for worker nodes to be deleted first, %d remaining", len(allMachines)-len(ownedMachines)),
 		})
 		return ctrl.Result{RequeueAfter: deleteRequeueAfter}, nil
 	}
@@ -231,8 +232,9 @@ func (r *CK8sControlPlaneReconciler) reconcileDelete(ctx context.Context, cluste
 		return reconcile.Result{}, err
 	}
 	conditions.Set(kcp, metav1.Condition{
-		Type:   string(controlplanev1.ResizedCondition),
-		Status: metav1.ConditionFalse,
+		Type:    string(controlplanev1.ResizedCondition),
+		Status:  metav1.ConditionFalse,
+		Message: fmt.Sprintf("Deleting control plane machines, %d remaining", len(ownedMachines)-len(machinesToDelete)),
 	})
 	return ctrl.Result{RequeueAfter: deleteRequeueAfter}, nil
 }
@@ -353,14 +355,16 @@ func (r *CK8sControlPlaneReconciler) updateStatus(ctx context.Context, kcp *cont
 	// We are scaling up
 	case replicas < desiredReplicas:
 		conditions.Set(kcp, metav1.Condition{
-			Type:   string(controlplanev1.ResizedCondition),
-			Status: metav1.ConditionFalse,
+			Type:    string(controlplanev1.ResizedCondition),
+			Status:  metav1.ConditionFalse,
+			Message: fmt.Sprintf("Scaling up control plane from %d to %d replicas", replicas, desiredReplicas),
 		})
 	// We are scaling down
 	case replicas > desiredReplicas:
 		conditions.Set(kcp, metav1.Condition{
-			Type:   string(controlplanev1.ResizedCondition),
-			Status: metav1.ConditionFalse,
+			Type:    string(controlplanev1.ResizedCondition),
+			Status:  metav1.ConditionFalse,
+			Message: fmt.Sprintf("Scaling down control plane from %d to %d replicas", replicas, desiredReplicas),
 		})
 	default:
 		// make sure last resize operation is marked as completed.
@@ -555,8 +559,9 @@ func (r *CK8sControlPlaneReconciler) reconcile(ctx context.Context, cluster *clu
 		logger.Info("Rolling out Control Plane machines", "needRollout", needRollout.Names())
 
 		conditions.Set(kcp, metav1.Condition{
-			Type:   string(controlplanev1.MachinesSpecUpToDateCondition),
-			Status: metav1.ConditionFalse,
+			Type:    string(controlplanev1.MachinesSpecUpToDateCondition),
+			Status:  metav1.ConditionFalse,
+			Message: fmt.Sprintf("Rolling out %d control plane machines", len(needRollout)),
 		})
 		return r.upgradeControlPlane(ctx, cluster, kcp, controlPlane, needRollout)
 	default:
@@ -565,8 +570,9 @@ func (r *CK8sControlPlaneReconciler) reconcile(ctx context.Context, cluster *clu
 		// reconciliation/before a rolling upgrade actually starts.
 		if conditions.Has(controlPlane.KCP, string(controlplanev1.MachinesSpecUpToDateCondition)) {
 			conditions.Set(kcp, metav1.Condition{
-				Type:   string(controlplanev1.MachinesSpecUpToDateCondition),
-				Status: metav1.ConditionTrue,
+				Type:    string(controlplanev1.MachinesSpecUpToDateCondition),
+				Status:  metav1.ConditionTrue,
+				Message: "Successfully rolled out all control plane machines",
 			})
 
 		}
@@ -583,8 +589,9 @@ func (r *CK8sControlPlaneReconciler) reconcile(ctx context.Context, cluster *clu
 		logger.Info("Initializing control plane", "Desired", desiredReplicas, "Existing", numMachines)
 
 		conditions.Set(kcp, metav1.Condition{
-			Type:   string(controlplanev1.AvailableCondition),
-			Status: metav1.ConditionFalse,
+			Type:    string(controlplanev1.AvailableCondition),
+			Status:  metav1.ConditionFalse,
+			Message: "Initializing control plane",
 		})
 		return r.initializeControlPlane(ctx, cluster, kcp, controlPlane)
 	// We are scaling up
