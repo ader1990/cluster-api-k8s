@@ -546,10 +546,20 @@ func (w *Workload) UpdateAgentConditions(ctx context.Context, controlPlane *Cont
 		for i := range controlPlane.Machines {
 			machine := controlPlane.Machines[i]
 			for _, condition := range allMachinePodConditions {
-				v1beta1conditions.MarkUnknown(machine, condition, controlplanev1.PodInspectionFailedReason, "Failed to get the node which is hosting this component")
+				conditions.Set(machine, metav1.Condition{
+					Type:    string(condition),
+					Status:  metav1.ConditionUnknown,
+					Reason:  string(controlplanev1.PodInspectionFailedReason),
+					Message: "Failed to get the node which is hosting this component",
+				})
 			}
 		}
-		v1beta1conditions.MarkUnknown(controlPlane.KCP, controlplanev1.ControlPlaneComponentsHealthyCondition, controlplanev1.ControlPlaneComponentsInspectionFailedReason, "Failed to list nodes which are hosting control plane components")
+		conditions.Set(controlPlane.KCP, metav1.Condition{
+			Type:    string(controlplanev1.ControlPlaneComponentsHealthyCondition),
+			Status:  metav1.ConditionUnknown,
+			Reason:  string(controlplanev1.ControlPlaneComponentsInspectionFailedReason),
+			Message: "Failed to list nodes which are hosting control plane components",
+		})
 		return
 	}
 
@@ -700,31 +710,56 @@ func aggregateFromMachinesToKCP(input aggregateFromMachinesToKCPInput) {
 		input.kcpErrors = append(input.kcpErrors, fmt.Sprintf("Following machines are reporting %s errors: %s", input.note, strings.Join(kcpMachinesWithErrors.List(), ", ")))
 	}
 	if len(input.kcpErrors) > 0 {
-		v1beta1conditions.MarkFalse(input.controlPlane.KCP, input.condition, input.unhealthyReason, clusterv1.ConditionSeverityError, "%s", strings.Join(input.kcpErrors, "; "))
+		conditions.Set(input.controlPlane.KCP, metav1.Condition{
+			Type:    string(input.condition),
+			Status:  metav1.ConditionFalse,
+			Reason:  controlplanev1.GroupVersion.Version,
+			Message: strings.Join(input.kcpErrors, "; "),
+		})
 		return
 	}
 
 	// In case of no errors and at least one machine with warnings, report false, warnings.
 	if len(kcpMachinesWithWarnings) > 0 {
-		v1beta1conditions.MarkFalse(input.controlPlane.KCP, input.condition, input.unhealthyReason, clusterv1.ConditionSeverityWarning, "Following machines are reporting %s warnings: %s", input.note, strings.Join(kcpMachinesWithWarnings.List(), ", "))
+		conditions.Set(input.controlPlane.KCP, metav1.Condition{
+			Type:    string(input.condition),
+			Status:  metav1.ConditionFalse,
+			Reason:  controlplanev1.GroupVersion.Version,
+			Message: fmt.Sprintf("Following machines are reporting warnings: %s", strings.Join(kcpMachinesWithWarnings.List(), ", ")),
+		})
 		return
 	}
 
 	// In case of no errors, no warning, and at least one machine with info, report false, info.
 	if len(kcpMachinesWithInfo) > 0 {
-		v1beta1conditions.MarkFalse(input.controlPlane.KCP, input.condition, input.unhealthyReason, clusterv1.ConditionSeverityInfo, "Following machines are reporting %s info: %s", input.note, strings.Join(kcpMachinesWithInfo.List(), ", "))
+		conditions.Set(input.controlPlane.KCP, metav1.Condition{
+			Type:    string(input.condition),
+			Status:  metav1.ConditionTrue,
+			Reason:  controlplanev1.GroupVersion.Version,
+			Message: fmt.Sprintf("Following machines are reporting info: %s", strings.Join(kcpMachinesWithInfo.List(), ", ")),
+		})
 		return
 	}
 
 	// In case of no errors, no warning, no Info, and at least one machine with true conditions, report true.
 	if len(kcpMachinesWithTrue) > 0 {
-		v1beta1conditions.MarkTrue(input.controlPlane.KCP, input.condition)
+		conditions.Set(input.controlPlane.KCP, metav1.Condition{
+			Type:    string(input.condition),
+			Status:  metav1.ConditionTrue,
+			Reason:  controlplanev1.GroupVersion.Version,
+			Message: fmt.Sprintf("Following machines are reporting true: %s", strings.Join(kcpMachinesWithTrue.List(), ", ")),
+		})
 		return
 	}
 
 	// Otherwise, if there is at least one machine with unknown, report unknown.
 	if len(kcpMachinesWithUnknown) > 0 {
-		v1beta1conditions.MarkUnknown(input.controlPlane.KCP, input.condition, input.unknownReason, "Following machines are reporting unknown %s status: %s", input.note, strings.Join(kcpMachinesWithUnknown.List(), ", "))
+		conditions.Set(input.controlPlane.KCP, metav1.Condition{
+			Type:    string(input.condition),
+			Status:  metav1.ConditionUnknown,
+			Reason:  controlplanev1.GroupVersion.Version,
+			Message: fmt.Sprintf("Following machines are reporting unknown %s status: %s", input.note, strings.Join(kcpMachinesWithUnknown.List(), ", ")),
+		})
 		return
 	}
 
