@@ -217,6 +217,11 @@ type CK8sControlPlaneStatus struct {
 	// +optional
 	UnavailableReplicas int32 `json:"unavailableReplicas,omitempty"`
 
+	// AvailableReplicas is the number of available replicas targeted by this CK8sControlPlane.
+	// A machine is considered available when Machine's Available condition is true.
+	// +optional
+	AvailableReplicas *int32 `json:"availableReplicas,omitempty"`
+
 	// Initialized denotes whether or not the control plane is initialized.
 	// +optional
 	Initialized bool `json:"initialized"`
