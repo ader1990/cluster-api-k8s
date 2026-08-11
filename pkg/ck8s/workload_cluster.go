@@ -626,7 +626,7 @@ func (w *Workload) UpdateAgentConditions(ctx context.Context, controlPlane *Cont
 			// If there is an error getting the Pod, do not set any conditions.
 			if apierrors.IsNotFound(err) {
 				conditions.Set(machine, metav1.Condition{
-					Type:    string(controlplanev1.MachineAgentHealthyCondition),
+					Type:    string(controlplanev1.CK8sControlPlaneMachineAgentHealthyCondition),
 					Status:  metav1.ConditionUnknown,
 					Reason:  string(controlplanev1.PodInspectionFailedReason),
 					Message: "Node is unreachable",
@@ -634,7 +634,7 @@ func (w *Workload) UpdateAgentConditions(ctx context.Context, controlPlane *Cont
 				return
 			}
 			conditions.Set(machine, metav1.Condition{
-				Type:    string(controlplanev1.MachineAgentHealthyCondition),
+				Type:    string(controlplanev1.CK8sControlPlaneMachineAgentHealthyCondition),
 				Status:  metav1.ConditionUnknown,
 				Reason:  string(controlplanev1.PodInspectionFailedReason),
 				Message: "Failed to get node status for node " + node.Name + ", error: " + err.Error(),
@@ -645,7 +645,7 @@ func (w *Workload) UpdateAgentConditions(ctx context.Context, controlPlane *Cont
 		for _, condition := range targetnode.Status.Conditions {
 			if condition.Type == corev1.NodeReady && condition.Status == corev1.ConditionTrue {
 				conditions.Set(machine, metav1.Condition{
-					Type:    string(condition.Type),
+					Type:    string(controlplanev1.CK8sControlPlaneMachineAgentHealthyCondition),
 					Status:  metav1.ConditionTrue,
 					Reason:  "NodeReady",
 					Message: "Node is reachable and healthy",
