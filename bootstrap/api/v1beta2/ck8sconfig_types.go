@@ -18,7 +18,6 @@ package v1beta2
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 )
 
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
@@ -324,7 +323,7 @@ type CK8sConfigStatus struct {
 
 	// Conditions defines current service state of the CK8sConfig.
 	// +optional
-	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -340,12 +339,12 @@ type CK8sConfig struct {
 	Status CK8sConfigStatus `json:"status,omitempty"`
 }
 
-func (c *CK8sConfig) GetConditions() clusterv1.Conditions {
-	return c.Status.Conditions
+func (in *CK8sConfig) GetConditions() []metav1.Condition {
+	return in.Status.Conditions
 }
 
-func (c *CK8sConfig) SetConditions(conditions clusterv1.Conditions) {
-	c.Status.Conditions = conditions
+func (in *CK8sConfig) SetConditions(conditions []metav1.Condition) {
+	in.Status.Conditions = conditions
 }
 
 // +kubebuilder:object:root=true
@@ -439,11 +438,4 @@ type SecretRef struct {
 
 func init() {
 	SchemeBuilder.Register(&CK8sConfig{}, &CK8sConfigList{})
-}
-
-func (in *CK8sConfig) GetV1Beta1Conditions() clusterv1.Conditions {
-	return in.Status.Conditions
-}
-func (in *CK8sConfig) SetV1Beta1Conditions(conditions clusterv1.Conditions) {
-	in.Status.Conditions = conditions
 }
