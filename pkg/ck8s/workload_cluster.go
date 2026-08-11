@@ -647,6 +647,7 @@ func (w *Workload) UpdateAgentConditions(ctx context.Context, controlPlane *Cont
 				conditions.Set(machine, metav1.Condition{
 					Type:    string(condition.Type),
 					Status:  metav1.ConditionTrue,
+					Reason:  "NodeReady",
 					Message: "Node is reachable and healthy",
 				})
 			}
