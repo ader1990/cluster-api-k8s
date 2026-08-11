@@ -209,6 +209,7 @@ func (r *CK8sControlPlaneReconciler) reconcileDelete(ctx context.Context, cluste
 		conditions.Set(kcp, metav1.Condition{
 			Type:    string(controlplanev1.ResizedCondition),
 			Status:  metav1.ConditionFalse,
+			Reason:  "WaitingForWorkerDeletion",
 			Message: fmt.Sprintf("Waiting for worker nodes to be deleted first, %d remaining", len(allMachines)-len(ownedMachines)),
 		})
 		return ctrl.Result{RequeueAfter: deleteRequeueAfter}, nil
@@ -234,6 +235,7 @@ func (r *CK8sControlPlaneReconciler) reconcileDelete(ctx context.Context, cluste
 	conditions.Set(kcp, metav1.Condition{
 		Type:    string(controlplanev1.ResizedCondition),
 		Status:  metav1.ConditionFalse,
+		Reason:  "DeletingControlPlaneMachines",
 		Message: fmt.Sprintf("Deleting control plane machines, %d remaining", len(ownedMachines)-len(machinesToDelete)),
 	})
 	return ctrl.Result{RequeueAfter: deleteRequeueAfter}, nil
@@ -246,7 +248,8 @@ func patchCK8sControlPlane(ctx context.Context, patchHelper *patch.Helper, kcp *
 		ctx,
 		kcp,
 		patch.WithOwnedConditions{Conditions: []string{
-			string(clusterv1.ReadyCondition),
+			clusterv1.PausedCondition,
+			string(controlplanev1.MachinesReadyCondition),
 			string(controlplanev1.MachinesSpecUpToDateCondition),
 			string(controlplanev1.ResizedCondition),
 			string(controlplanev1.MachinesReadyCondition),
@@ -256,6 +259,7 @@ func patchCK8sControlPlane(ctx context.Context, patchHelper *patch.Helper, kcp *
 		}},
 		patch.WithStatusObservedGeneration{},
 	)
+
 }
 
 func (r *CK8sControlPlaneReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, log *logr.Logger) error {
@@ -357,6 +361,7 @@ func (r *CK8sControlPlaneReconciler) updateStatus(ctx context.Context, kcp *cont
 		conditions.Set(kcp, metav1.Condition{
 			Type:    string(controlplanev1.ResizedCondition),
 			Status:  metav1.ConditionFalse,
+			Reason:  controlplanev1.ScalingUpReason,
 			Message: fmt.Sprintf("Scaling up control plane from %d to %d replicas", replicas, desiredReplicas),
 		})
 	// We are scaling down
@@ -364,6 +369,7 @@ func (r *CK8sControlPlaneReconciler) updateStatus(ctx context.Context, kcp *cont
 		conditions.Set(kcp, metav1.Condition{
 			Type:    string(controlplanev1.ResizedCondition),
 			Status:  metav1.ConditionFalse,
+			Reason:  controlplanev1.ScalingDownReason,
 			Message: fmt.Sprintf("Scaling down control plane from %d to %d replicas", replicas, desiredReplicas),
 		})
 	default:
@@ -375,6 +381,7 @@ func (r *CK8sControlPlaneReconciler) updateStatus(ctx context.Context, kcp *cont
 			conditions.Set(kcp, metav1.Condition{
 				Type:    string(controlplanev1.ResizedCondition),
 				Status:  metav1.ConditionTrue,
+				Reason:  "ScalingCompleted",
 				Message: "Successfully resized control plane",
 			})
 		}
@@ -418,6 +425,7 @@ func (r *CK8sControlPlaneReconciler) updateStatus(ctx context.Context, kcp *cont
 		conditions.Set(kcp, metav1.Condition{
 			Type:    string(controlplanev1.AvailableCondition),
 			Status:  metav1.ConditionTrue,
+			Reason:  "ControlPlaneAvailable",
 			Message: "Successfully AvailableCondition: Control plane is available",
 		})
 	}
@@ -479,6 +487,7 @@ func (r *CK8sControlPlaneReconciler) reconcile(ctx context.Context, cluster *clu
 	conditions.Set(kcp, metav1.Condition{
 		Type:    string(controlplanev1.CertificatesAvailableCondition),
 		Status:  metav1.ConditionTrue,
+		Reason:  "CertificatesGenerated",
 		Message: "Successfully looked up or created cluster certificates",
 	})
 
@@ -494,6 +503,7 @@ func (r *CK8sControlPlaneReconciler) reconcile(ctx context.Context, cluster *clu
 	conditions.Set(kcp, metav1.Condition{
 		Type:    string(controlplanev1.TokenAvailableCondition),
 		Status:  metav1.ConditionTrue,
+		Reason:  "TokenGenerated",
 		Message: "Successfully looked up or created cluster tokens",
 	})
 
@@ -561,6 +571,7 @@ func (r *CK8sControlPlaneReconciler) reconcile(ctx context.Context, cluster *clu
 		conditions.Set(kcp, metav1.Condition{
 			Type:    string(controlplanev1.MachinesSpecUpToDateCondition),
 			Status:  metav1.ConditionFalse,
+			Reason:  controlplanev1.RollingUpdateInProgressReason,
 			Message: fmt.Sprintf("Rolling out %d control plane machines", len(needRollout)),
 		})
 		return r.upgradeControlPlane(ctx, cluster, kcp, controlPlane, needRollout)
@@ -572,6 +583,7 @@ func (r *CK8sControlPlaneReconciler) reconcile(ctx context.Context, cluster *clu
 			conditions.Set(kcp, metav1.Condition{
 				Type:    string(controlplanev1.MachinesSpecUpToDateCondition),
 				Status:  metav1.ConditionTrue,
+				Reason:  "RollingUpdateCompleted",
 				Message: "Successfully rolled out all control plane machines",
 			})
 
@@ -591,6 +603,7 @@ func (r *CK8sControlPlaneReconciler) reconcile(ctx context.Context, cluster *clu
 		conditions.Set(kcp, metav1.Condition{
 			Type:    string(controlplanev1.AvailableCondition),
 			Status:  metav1.ConditionFalse,
+			Reason:  controlplanev1.WaitingForCK8sServerReason,
 			Message: "Initializing control plane",
 		})
 		return r.initializeControlPlane(ctx, cluster, kcp, controlPlane)

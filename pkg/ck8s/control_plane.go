@@ -376,8 +376,8 @@ func (c *ControlPlane) PatchMachines(ctx context.Context) error {
 	for i := range c.Machines {
 		machine := c.Machines[i]
 		if helper, ok := c.machinesPatchHelpers[machine.Name]; ok {
-			if err := helper.Patch(ctx, machine, patch.WithOwnedConditions{Conditions: []string{
-				"MachineAgentHealthyCondition",
+			if err := helper.Patch(ctx, machine, patch.WithOwnedV1Beta1Conditions{Conditions: []clusterv1.ConditionType{
+				controlplanev1.MachineAgentHealthyCondition,
 			}}); err != nil {
 				errList = append(errList, fmt.Errorf("failed to patch machine %s: %w", machine.Name, err))
 			}
