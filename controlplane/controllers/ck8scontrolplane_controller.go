@@ -341,7 +341,7 @@ func (r *CK8sControlPlaneReconciler) updateStatus(ctx context.Context, kcp *cont
 	// set basic data that does not require interacting with the workload cluster
 	kcp.Status.Replicas = replicas
 	kcp.Status.ReadyReplicas = 0
-	kcp.Status.AvailableReplicas = nil
+	kcp.Status.AvailableReplicas = kcp.Status.ReadyReplicas
 	kcp.Status.UnavailableReplicas = replicas
 
 	lowestVersion := ownedMachines.LowestVersion()
@@ -401,7 +401,7 @@ func (r *CK8sControlPlaneReconciler) updateStatus(ctx context.Context, kcp *cont
 
 	kcp.Status.ReadyReplicas = status.ReadyNodes
 	kcp.Status.UnavailableReplicas = replicas - status.ReadyNodes
-	kcp.Status.AvailableReplicas = &status.ReadyNodes
+	kcp.Status.AvailableReplicas = status.ReadyNodes
 
 	enableDefaultNetwork := kcp.Spec.CK8sConfigSpec.InitConfig.GetEnableDefaultNetwork()
 
