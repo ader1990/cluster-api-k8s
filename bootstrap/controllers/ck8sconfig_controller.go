@@ -165,7 +165,7 @@ func (r *CK8sConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	switch {
 	// Wait for the infrastructure to be ready.
-	case !conditions.IsTrue(cluster, string(clusterv1.ConditionType("InfrastructureReady"))):
+	case !*cluster.Status.Initialization.InfrastructureProvisioned:
 		log.Info("Cluster infrastructure is not ready, waiting")
 		conditions.Set(config, metav1.Condition{
 			Type:   string(bootstrapv1.DataSecretAvailableCondition),
