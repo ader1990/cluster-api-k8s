@@ -22,7 +22,8 @@ import clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 
 const (
 	// MachinesReady reports an aggregate of current status of the machines controlled by the CK8sControlPlane.
-	MachinesReadyCondition clusterv1.ConditionType = "MachinesReady"
+	MachinesReadyCondition                       clusterv1.ConditionType = "MachinesReady"
+	CK8sControlPlaneMachineAgentHealthyCondition                         = "AgentHealthy"
 )
 
 const (

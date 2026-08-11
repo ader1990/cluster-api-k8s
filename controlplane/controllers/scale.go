@@ -173,8 +173,9 @@ func (r *CK8sControlPlaneReconciler) preflightChecks(_ context.Context, controlP
 	}
 
 	// Check machine health conditions; if there are conditions with False or Unknown, then wait.
-	allMachineHealthConditions := []clusterv1.ConditionType{controlplanev1.MachineAgentHealthyCondition}
-
+	allMachineHealthConditions := []string{
+		controlplanev1.CK8sControlPlaneMachineAgentHealthyCondition,
+	}
 	machineErrors := []error{}
 
 loopmachines:
@@ -206,8 +207,8 @@ loopmachines:
 	return ctrl.Result{}, nil
 }
 
-func preflightCheckCondition(kind string, obj conditions.Getter, condition clusterv1.ConditionType) error {
-	c := conditions.Get(obj, string(condition))
+func preflightCheckCondition(kind string, obj conditions.Getter, condition string) error {
+	c := conditions.Get(obj, condition)
 	objName := obj.(metav1.ObjectMetaAccessor).GetObjectMeta().GetName()
 	if c == nil {
 		return fmt.Errorf("%s %s does not have %s condition: %w", kind, objName, condition, ErrPreConditionFailed)

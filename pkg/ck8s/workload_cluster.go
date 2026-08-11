@@ -535,8 +535,8 @@ func (w *Workload) newHeaderWithNodeToken(nodeToken string) map[string][]string 
 // components. This operation is best effort, in the sense that in case
 // of problems in retrieving the pod status, it sets the condition to Unknown state without returning any error.
 func (w *Workload) UpdateAgentConditions(ctx context.Context, controlPlane *ControlPlane) {
-	allMachinePodConditions := []clusterv1.ConditionType{
-		controlplanev1.MachineAgentHealthyCondition,
+	allMachinePodConditions := []string{
+		controlplanev1.CK8sControlPlaneMachineAgentHealthyCondition,
 	}
 
 	// NOTE: this fun uses control plane nodes from the workload cluster as a source of truth for the current state.
@@ -684,7 +684,7 @@ func (w *Workload) UpdateAgentConditions(ctx context.Context, controlPlane *Cont
 		controlPlane:      controlPlane,
 		machineConditions: allMachinePodConditions,
 		kcpErrors:         kcpErrors,
-		condition:         controlplanev1.ControlPlaneComponentsHealthyCondition,
+		condition:         string(controlplanev1.ControlPlaneComponentsHealthyCondition),
 		unhealthyReason:   controlplanev1.ControlPlaneComponentsUnhealthyReason,
 		unknownReason:     controlplanev1.ControlPlaneComponentsUnknownReason,
 		note:              "control plane",
@@ -693,9 +693,9 @@ func (w *Workload) UpdateAgentConditions(ctx context.Context, controlPlane *Cont
 
 type aggregateFromMachinesToKCPInput struct {
 	controlPlane      *ControlPlane
-	machineConditions []clusterv1.ConditionType
+	machineConditions []string
 	kcpErrors         []string
-	condition         clusterv1.ConditionType
+	condition         string
 	unhealthyReason   string
 	unknownReason     string
 	note              string
