@@ -168,9 +168,10 @@ func (r *CK8sConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	case !*cluster.Status.Initialization.InfrastructureProvisioned:
 		log.Info("Cluster infrastructure is not ready, waiting")
 		conditions.Set(config, metav1.Condition{
-			Type:   string(bootstrapv1.DataSecretAvailableCondition),
-			Status: metav1.ConditionFalse,
-			Reason: bootstrapv1.WaitingForClusterInfrastructureReason,
+			Type:    string(bootstrapv1.DataSecretAvailableCondition),
+			Status:  metav1.ConditionFalse,
+			Reason:  bootstrapv1.WaitingForClusterInfrastructureReason,
+			Message: "Cluster infrastructure is not ready yet",
 		})
 		return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil
 	// Reconcile status for machines that already have a secret reference, but our status isn't up to date.
@@ -179,9 +180,10 @@ func (r *CK8sConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		config.Status.Ready = true
 		config.Status.DataSecretName = configOwner.DataSecretName()
 		conditions.Set(config, metav1.Condition{
-			Type:   string(bootstrapv1.DataSecretAvailableCondition),
-			Status: metav1.ConditionTrue,
-			Reason: "DataSecretAvailable",
+			Type:    string(bootstrapv1.DataSecretAvailableCondition),
+			Status:  metav1.ConditionTrue,
+			Reason:  "DataSecretAvailable",
+			Message: "Data secret is available",
 		})
 		return ctrl.Result{}, nil
 	// Status is ready means a config has been generated.
@@ -606,9 +608,10 @@ func (r *CK8sConfigReconciler) handleClusterNotInitialized(ctx context.Context, 
 	// using the DataSecretGeneratedFailedReason
 	if c := conditions.Get(scope.Config, string(bootstrapv1.DataSecretAvailableCondition)); c == nil || c.Reason != bootstrapv1.DataSecretGenerationFailedReason {
 		conditions.Set(scope.Config, metav1.Condition{
-			Type:   string(bootstrapv1.DataSecretAvailableCondition),
-			Status: metav1.ConditionFalse,
-			Reason: string(bootstrapv1.WaitingForControlPlaneAvailableReason),
+			Type:    string(bootstrapv1.DataSecretAvailableCondition),
+			Status:  metav1.ConditionFalse,
+			Reason:  string(bootstrapv1.WaitingForControlPlaneAvailableReason),
+			Message: "Waiting for control plane to become available",
 		})
 	}
 
@@ -661,9 +664,10 @@ func (r *CK8sConfigReconciler) handleClusterNotInitialized(ctx context.Context, 
 		return ctrl.Result{}, err
 	}
 	conditions.Set(scope.Config, metav1.Condition{
-		Type:   string(bootstrapv1.CertificatesAvailableCondition),
-		Status: metav1.ConditionTrue,
-		Reason: "CertificatesAvailable",
+		Type:    string(bootstrapv1.CertificatesAvailableCondition),
+		Status:  metav1.ConditionTrue,
+		Reason:  "CertificatesAvailable",
+		Message: "Certificates are available",
 	})
 
 	authToken, err := token.Lookup(ctx, r.Client, client.ObjectKeyFromObject(scope.Cluster))
@@ -856,9 +860,10 @@ func (r *CK8sConfigReconciler) storeBootstrapData(ctx context.Context, scope *Sc
 	scope.Config.Status.DataSecretName = ptr.To(secret.Name)
 	scope.Config.Status.Ready = true
 	conditions.Set(scope.Config, metav1.Condition{
-		Type:   string(bootstrapv1.DataSecretAvailableCondition),
-		Status: metav1.ConditionTrue,
-		Reason: "DataSecretAvailable",
+		Type:    string(bootstrapv1.DataSecretAvailableCondition),
+		Status:  metav1.ConditionTrue,
+		Reason:  "DataSecretAvailable",
+		Message: "Bootstrap data secret has been stored",
 	})
 	return nil
 }
