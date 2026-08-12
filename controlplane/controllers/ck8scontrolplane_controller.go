@@ -24,14 +24,12 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	pkgerrors "github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/controllers/external"
 	"sigs.k8s.io/cluster-api/util"
@@ -74,90 +72,46 @@ type CK8sControlPlaneReconciler struct {
 // +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=machines;machines/status,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch
 
-func (r *CK8sControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, reterr error) {
+func (r *CK8sControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := r.Log.WithValues("namespace", req.Namespace, "ck8sControlPlane", req.Name)
 
 	// Fetch the CK8sControlPlane instance.
 	kcp := &controlplanev1.CK8sControlPlane{}
-	if err := r.Client.Get(ctx, req.NamespacedName, kcp); err != nil {
+	if err := r.Get(ctx, req.NamespacedName, kcp); err != nil {
 		if apierrors.IsNotFound(err) {
-			return ctrl.Result{}, nil
+			return reconcile.Result{}, nil
 		}
-		return ctrl.Result{}, err
+		return ctrl.Result{Requeue: true}, nil
 	}
 
 	// Fetch the Cluster.
 	cluster, err := util.GetOwnerCluster(ctx, r.Client, kcp.ObjectMeta)
 	if err != nil {
-		// It should be an issue to be investigated if the controller get the NotFound status.
-		// So, it should return the error.
-		return ctrl.Result{}, pkgerrors.Wrapf(err, "failed to retrieve owner Cluster")
+		logger.Error(err, "Failed to retrieve owner Cluster from the API Server")
+		return reconcile.Result{}, err
 	}
 	if cluster == nil {
-		logger.Info("Cluster Controller has not yet set OwnerRef. Requeuing CK8sControlPlane after 20 seconds")
-		res = ctrl.Result{RequeueAfter: 20 * time.Second}
-		reterr = nil
-		return
+		logger.Info("Cluster Controller has not yet set OwnerRef")
+		return ctrl.Result{Requeue: true}, nil
 	}
-
 	logger = logger.WithValues("cluster", cluster.Name)
 
 	if annotations.IsPaused(cluster, kcp) {
 		logger.Info("Reconciliation is paused for this object")
-		return ctrl.Result{}, nil
+		return reconcile.Result{}, nil
 	}
 
 	// Wait for the cluster infrastructure to be ready before creating machines
 	if !conditions.IsTrue(cluster, clusterv1.InfrastructureReadyCondition) {
-		return ctrl.Result{}, nil
+		return reconcile.Result{}, nil
 	}
 
 	// Initialize the patch helper.
 	patchHelper, err := patch.NewHelper(kcp, r.Client)
 	if err != nil {
 		logger.Error(err, "Failed to configure the patch helper")
-		return ctrl.Result{}, err
+		return ctrl.Result{Requeue: true}, nil
 	}
-
-	defer func() {
-		// Always attempt to update status.
-		if err := r.updateStatus(ctx, kcp, cluster); err != nil {
-			var connFailure *ck8s.RemoteClusterConnectionError
-			if pkgerrors.As(err, &connFailure) {
-				logger.Info(fmt.Sprintf("Could not connect to workload cluster to fetch status: %s", err.Error()))
-			} else {
-				reterr = kerrors.NewAggregate([]error{reterr, pkgerrors.WithMessage(err, "failed to update KubeadmControlPlane status")})
-			}
-		}
-
-		// Always attempt to Patch the CK8SControlPlane object and status after each reconciliation.
-		patchOpts := []patch.Option{}
-		if reterr == nil {
-			patchOpts = append(patchOpts, patch.WithStatusObservedGeneration{})
-		}
-		if err := patchCK8sControlPlane(ctx, patchHelper, kcp); err != nil {
-			reterr = kerrors.NewAggregate([]error{reterr, pkgerrors.Wrap(err, "failed to patch CK8SControlPlane")})
-		}
-
-		// Only requeue if there is no error, Requeue or RequeueAfter and the object does not have a deletion timestamp.
-		if reterr == nil && res.IsZero() && kcp.DeletionTimestamp.IsZero() {
-			// Make CK8SControlPlane requeue in case node status is not ready, so we can check for node status without waiting for a full
-			// resync (by default 10 minutes).
-			// The alternative solution would be to watch the control plane nodes in the Cluster - similar to how the
-			// MachineSet and MachineHealthCheck controllers watch the nodes under their control.
-			if !ptr.Deref(kcp.Status.Initialization.ControlPlaneInitialized, false) {
-				res = ctrl.Result{RequeueAfter: 20 * time.Second}
-			}
-
-			// Make CK8SControlPlane requeue if CK8sControlPlaneMachineAgentHealthyCondition is false so we can check for control plane component
-			// status without waiting for a full resync (by default 10 minutes).
-			// Otherwise this condition can lead to a delay in provisioning MachineDeployments when MachineSet preflight checks are enabled.
-			// The alternative solution to this requeue would be watching the relevant pods inside each workload cluster which would be very expensive.
-			if conditions.IsFalse(kcp, controlplanev1.CK8sControlPlaneMachineAgentHealthyCondition) {
-				res = ctrl.Result{RequeueAfter: 20 * time.Second}
-			}
-		}
-	}()
 
 	// Add finalizer first if not exist to avoid the race condition between init and delete
 	if !controllerutil.ContainsFinalizer(kcp, controlplanev1.CK8sControlPlaneFinalizer) {
@@ -176,15 +130,42 @@ func (r *CK8sControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return reconcile.Result{}, nil
 	}
 
-	var result ctrl.Result
+	var res ctrl.Result
 	if !kcp.DeletionTimestamp.IsZero() {
 		// Handle deletion reconciliation loop.
-		result, err = r.reconcileDelete(ctx, cluster, kcp)
+		res, err = r.reconcileDelete(ctx, cluster, kcp)
 	} else {
 		// Handle normal reconciliation loop.
-		result, err = r.reconcile(ctx, cluster, kcp)
+		res, err = r.reconcile(ctx, cluster, kcp)
 	}
-	return result, err
+
+	// Always attempt to update status.
+	if updateErr := r.updateStatus(ctx, kcp, cluster); updateErr != nil {
+		var connFailure *ck8s.RemoteClusterConnectionError
+		if errors.As(updateErr, &connFailure) {
+			logger.Info("Could not connect to workload cluster to fetch status", "updateErr", updateErr.Error())
+		} else {
+			logger.Error(updateErr, "Failed to update CK8sControlPlane Status")
+			err = kerrors.NewAggregate([]error{err, updateErr})
+		}
+	}
+
+	// Always attempt to Patch the CK8sControlPlane object and status after each reconciliation.
+	if patchErr := patchCK8sControlPlane(ctx, patchHelper, kcp); patchErr != nil {
+		logger.Error(patchErr, "Failed to patch CK8sControlPlane")
+		err = kerrors.NewAggregate([]error{err, patchErr})
+	}
+
+	// TODO: remove this as soon as we have a proper remote cluster cache in place.
+	// Make KCP to requeue in case status is not ready, so we can check for node status without waiting for a full resync (by default 10 minutes).
+	// Only requeue if we are not going in exponential backoff due to error, or if we are not already re-queueing, or if the object has a deletion timestamp.
+	if err == nil && !res.Requeue && res.RequeueAfter <= 0 && kcp.DeletionTimestamp.IsZero() {
+		if !kcp.Status.Ready {
+			res = ctrl.Result{RequeueAfter: 20 * time.Second}
+		}
+	}
+
+	return res, err
 }
 
 // reconcileDelete handles CK8sControlPlane deletion.
