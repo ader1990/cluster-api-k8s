@@ -79,8 +79,10 @@ func (r *CK8sControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	kcp := &controlplanev1.CK8sControlPlane{}
 	if err := r.Get(ctx, req.NamespacedName, kcp); err != nil {
 		if apierrors.IsNotFound(err) {
+			logger.Error(err, "Could not find control plane in the API Server")
 			return reconcile.Result{}, nil
 		}
+		logger.Error(err, "Failed to retrieve control plane from the API Server")
 		return ctrl.Result{Requeue: true}, nil
 	}
 
@@ -92,7 +94,7 @@ func (r *CK8sControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 	if cluster == nil {
 		logger.Info("Cluster Controller has not yet set OwnerRef")
-		return ctrl.Result{Requeue: true, RequeueAfter: time.Second * 10}, nil
+		return ctrl.Result{Requeue: true}, nil
 	}
 	logger = logger.WithValues("cluster", cluster.Name)
 
