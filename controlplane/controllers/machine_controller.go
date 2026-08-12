@@ -8,10 +8,9 @@ import (
 	"github.com/go-logr/logr"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
-	clusterv1betav1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util/annotations"
-	v1beta1conditions "sigs.k8s.io/cluster-api/util/conditions/deprecated/v1beta1"
+	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -70,7 +69,7 @@ func (r *MachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	// if machine registered PreTerminate hook, wait for capi asks to resolve PreTerminateDeleteHook
 	if annotations.HasWithPrefix(clusterv1.PreTerminateDeleteHookAnnotationPrefix, m.Annotations) &&
 		m.Annotations[clusterv1.PreTerminateDeleteHookAnnotationPrefix] == ck8sHookName {
-		if !v1beta1conditions.IsFalse(m, clusterv1.ConditionType(clusterv1betav1.PreTerminateDeleteHookSucceededCondition)) {
+		if conditions.Get(m, PreTerminateHookCleanupAnnotation) == nil {
 			logger.Info("wait for machine drain and detech volume operation complete.")
 			return ctrl.Result{}, nil
 		}
