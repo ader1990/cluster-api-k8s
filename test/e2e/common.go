@@ -65,15 +65,16 @@ func setupSpecNamespace(ctx context.Context, specName string, clusterProxy frame
 }
 
 type cleanupInput struct {
-	SpecName          string
-	ClusterProxy      framework.ClusterProxy
-	ArtifactFolder    string
-	Namespace         *corev1.Namespace
-	CancelWatches     context.CancelFunc
-	Cluster           *clusterv1.Cluster
-	IntervalsGetter   func(spec, key string) []interface{}
-	SkipCleanup       bool
-	AdditionalCleanup func()
+	SpecName             string
+	ClusterProxy         framework.ClusterProxy
+	ArtifactFolder       string
+	ClusterctlConfigPath string
+	Namespace            *corev1.Namespace
+	CancelWatches        context.CancelFunc
+	Cluster              *clusterv1.Cluster
+	IntervalsGetter      func(spec, key string) []interface{}
+	SkipCleanup          bool
+	AdditionalCleanup    func()
 }
 
 func dumpSpecResourcesAndCleanup(ctx context.Context, input cleanupInput) {
@@ -91,10 +92,11 @@ func dumpSpecResourcesAndCleanup(ctx context.Context, input cleanupInput) {
 	Byf("Dumping all the Cluster API resources in the %q namespace", input.Namespace.Name)
 	// Dump all Cluster API related resources to artifacts before deleting them.
 	framework.DumpAllResources(ctx, framework.DumpAllResourcesInput{
-		Lister:         input.ClusterProxy.GetClient(),
-		Namespace:      input.Namespace.Name,
-		KubeConfigPath: input.ClusterProxy.GetKubeconfigPath(),
-		LogPath:        filepath.Join(input.ArtifactFolder, "clusters", input.ClusterProxy.GetName(), "resources"),
+		Lister:               input.ClusterProxy.GetClient(),
+		Namespace:            input.Namespace.Name,
+		KubeConfigPath:       input.ClusterProxy.GetKubeconfigPath(),
+		ClusterctlConfigPath: input.ClusterctlConfigPath,
+		LogPath:              filepath.Join(input.ArtifactFolder, "clusters", input.ClusterProxy.GetName(), "resources"),
 	})
 
 	if input.SkipCleanup {
