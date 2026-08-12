@@ -13,6 +13,20 @@ rules:
   - list
   - watch
 - apiGroups:
+  - bootstrap.cluster.x-k8s.io
+  - controlplane.cluster.x-k8s.io
+  - infrastructure.cluster.x-k8s.io
+  resources:
+  - '*'
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - cluster.x-k8s.io
   resources:
   - clusters
@@ -45,4 +59,25 @@ rules:
   - delete
   - get
   - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - get
+  - list
+  - patch
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - create
+  - get
+  - list
+  - patch
+  - update
   - watch
