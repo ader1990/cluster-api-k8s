@@ -22,7 +22,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 
 	bootstrapv1 "github.com/canonical/cluster-api-k8s/bootstrap/api/v1beta2"
 	"github.com/canonical/cluster-api-k8s/pkg/errors"
@@ -217,6 +217,11 @@ type CK8sControlPlaneStatus struct {
 	// +optional
 	UnavailableReplicas int32 `json:"unavailableReplicas,omitempty"`
 
+	// AvailableReplicas is the number of available replicas targeted by this CK8sControlPlane.
+	// A machine is considered available when Machine's Available condition is true.
+	// +optional
+	AvailableReplicas int32 `json:"availableReplicas,omitempty"`
+
 	// Initialized denotes whether or not the control plane is initialized.
 	// +optional
 	Initialized bool `json:"initialized"`
@@ -241,13 +246,29 @@ type CK8sControlPlaneStatus struct {
 	// +optional
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 
-	// Conditions defines current service state of the CK8sControlPlane.
-	// +optional
-	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
-
 	// LastRemediation stores info about last remediation performed.
 	// +optional
 	LastRemediation *LastRemediationStatus `json:"lastRemediation,omitempty"`
+
+	// Conditions defines current service state of the CK8sControlPlane.
+	// +optional
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
+
+	// Initialization provides observations of the CK8sControlPlane initialization process.
+	// NOTE: Fields in this struct are part of the Cluster API contract and are used to orchestrate initial Machine provisioning.
+	// +optional
+	Initialization CK8sControlPlaneInitializationStatus `json:"initialization,omitempty,omitzero"`
+}
+
+// CK8sControlPlaneInitializationStatus provides observations of the CK8sControlPlane initialization process.
+// +kubebuilder:validation:MinProperties=1
+type CK8sControlPlaneInitializationStatus struct {
+	// controlPlaneInitialized is true when the CK8sControlPlane provider reports that the Kubernetes control plane is initialized;
+	// A control plane is considered initialized when it can accept requests, no matter if this happens before
+	// the control plane is fully provisioned or not.
+	// NOTE: this field is part of the Cluster API contract, and it is used to orchestrate initial Machine provisioning.
+	// +optional
+	ControlPlaneInitialized *bool `json:"controlPlaneInitialized,omitempty"`
 }
 
 // LastRemediationStatus  stores info about last remediation performed.
@@ -286,11 +307,11 @@ type CK8sControlPlane struct {
 	Status CK8sControlPlaneStatus `json:"status,omitempty"`
 }
 
-func (in *CK8sControlPlane) GetConditions() clusterv1.Conditions {
+func (in *CK8sControlPlane) GetConditions() []metav1.Condition {
 	return in.Status.Conditions
 }
 
-func (in *CK8sControlPlane) SetConditions(conditions clusterv1.Conditions) {
+func (in *CK8sControlPlane) SetConditions(conditions []metav1.Condition) {
 	in.Status.Conditions = conditions
 }
 

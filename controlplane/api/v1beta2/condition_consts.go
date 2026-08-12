@@ -16,13 +16,14 @@ limitations under the License.
 
 package v1beta2
 
-import clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+import clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 
 // Conditions and condition Reasons for the CK8sControlPlane object.
 
 const (
 	// MachinesReady reports an aggregate of current status of the machines controlled by the CK8sControlPlane.
-	MachinesReadyCondition clusterv1.ConditionType = "MachinesReady"
+	MachinesReadyCondition                       clusterv1.ConditionType = "MachinesReady"
+	CK8sControlPlaneMachineAgentHealthyCondition                         = "AgentHealthy"
 )
 
 const (

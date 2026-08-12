@@ -35,7 +35,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"k8s.io/klog/v2"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/bootstrap"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
@@ -242,10 +242,10 @@ func setupBootstrapCluster(config *clusterctl.E2EConfig, scheme *runtime.Scheme,
 			By("Creating the bootstrap cluster using Docker")
 			clusterProvider = bootstrap.CreateKindBootstrapClusterAndLoadImages(ctx, bootstrap.CreateKindBootstrapClusterAndLoadImagesInput{
 				Name:               config.ManagementClusterName,
-				KubernetesVersion:  config.GetVariable(KubernetesVersionManagement),
+				KubernetesVersion:  config.GetVariableOrEmpty(KubernetesVersionManagement),
 				RequiresDockerSock: config.HasDockerProvider(),
 				Images:             config.Images,
-				IPFamily:           config.GetVariable(IPFamily),
+				IPFamily:           config.GetVariableOrEmpty(IPFamily),
 				LogFolder:          filepath.Join(artifactFolder, "kind"),
 			})
 			Expect(clusterProvider).ToNot(BeNil(), "Failed to create a bootstrap cluster")
