@@ -162,13 +162,16 @@ metadata:
   namespace: ${NAMESPACE}
 spec:
   clusterName: ${CLUSTER_NAME}
-  maxUnhealthy: 100%
-  nodeStartupTimeout: 30s
+  remediation:
+    triggerIf:
+      unhealthyLessThanOrEqualTo: 100%
   selector:
     matchLabels:
       cluster.x-k8s.io/control-plane: ""
       mhc-test: fail
-  unhealthyConditions:
-  - status: "False"
-    timeout: 10s
-    type: e2e.remediation.condition
+  checks:
+    nodeStartupTimeoutSeconds: 30
+    unhealthyNodeConditions:
+      - status: "False"
+        timeoutSeconds: 10
+        type: e2e.remediation.condition
