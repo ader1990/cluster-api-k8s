@@ -645,10 +645,22 @@ func (w *Workload) UpdateAgentConditions(ctx context.Context, controlPlane *Cont
 		for _, condition := range targetnode.Status.Conditions {
 			if condition.Type == corev1.NodeReady && condition.Status == corev1.ConditionTrue {
 				conditions.Set(machine, metav1.Condition{
-					Type:    string(controlplanev1.CK8sControlPlaneMachineAgentHealthyCondition),
+					Type:    clusterv1.MachineAvailableCondition,
 					Status:  metav1.ConditionTrue,
-					Reason:  "NodeReady",
-					Message: "Node is reachable and healthy",
+					Reason:  clusterv1.MachineAvailableReason,
+					Message: "Machine is available",
+				})
+				conditions.Set(machine, metav1.Condition{
+					Type:    clusterv1.MachineReadyCondition,
+					Status:  metav1.ConditionTrue,
+					Reason:  clusterv1.MachineReadyReason,
+					Message: "Machine is ready",
+				})
+				conditions.Set(machine, metav1.Condition{
+					Type:    clusterv1.MachineUpToDateCondition,
+					Status:  metav1.ConditionTrue,
+					Reason:  clusterv1.MachineUpToDateReason,
+					Message: "Machine is up to date",
 				})
 			}
 		}

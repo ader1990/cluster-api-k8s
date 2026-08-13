@@ -257,7 +257,6 @@ func patchCK8sControlPlane(ctx context.Context, patchHelper *patch.Helper, kcp *
 			string(controlplanev1.MachinesReadyCondition),
 			string(controlplanev1.MachinesSpecUpToDateCondition),
 			string(controlplanev1.ResizedCondition),
-			string(controlplanev1.MachinesReadyCondition),
 			string(controlplanev1.AvailableCondition),
 			string(controlplanev1.CertificatesAvailableCondition),
 			string(controlplanev1.TokenAvailableCondition),
@@ -409,10 +408,27 @@ func (r *CK8sControlPlaneReconciler) updateStatus(ctx context.Context, kcp *cont
 
 	logger.Info("ClusterStatus", "workload", status)
 
-	kcp.Status.ReadyReplicas = status.ReadyNodes
-	kcp.Status.UpToDateReplicas = kcp.Status.ReadyReplicas
-	kcp.Status.UnavailableReplicas = replicas - status.ReadyNodes
-	kcp.Status.AvailableReplicas = status.ReadyNodes
+	readyReplicas := int32(0)
+	availableReplicas := int32(0)
+	upToDateReplicas := int32(0)
+	for _, machine := range ownedMachines {
+		if conditions.IsTrue(machine, clusterv1.MachineReadyCondition) {
+			readyReplicas++
+		}
+
+		if conditions.IsTrue(machine, clusterv1.MachineAvailableCondition) {
+			availableReplicas++
+		}
+
+		if conditions.IsTrue(machine, clusterv1.MachineUpToDateCondition) {
+			upToDateReplicas++
+		}
+	}
+
+	kcp.Status.ReadyReplicas = readyReplicas
+	kcp.Status.UpToDateReplicas = upToDateReplicas
+	kcp.Status.AvailableReplicas = availableReplicas
+	kcp.Status.UnavailableReplicas = replicas - readyReplicas
 
 	enableDefaultNetwork := kcp.Spec.CK8sConfigSpec.InitConfig.GetEnableDefaultNetwork()
 
