@@ -100,7 +100,7 @@ spec:
       image:
         name: ${LXC_IMAGE_NAME}
 ---
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: MachineDeployment
 metadata:
   name: ${CLUSTER_NAME}-md-0
@@ -155,7 +155,7 @@ spec:
       extraKubeletArgs:
         --provider-id: "lxc:///{{ v1.local_hostname }}"
 ---
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: MachineHealthCheck
 metadata:
   name: ${CLUSTER_NAME}-mhc-0
