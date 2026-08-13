@@ -433,7 +433,7 @@ func WaitForControlPlaneToBeReady(ctx context.Context, input WaitForControlPlane
 		// * .spec.replicas, .status.replicas, .status.upToDateReplicas,
 		//   .status.readyReplicas are not equal and
 		// * unavailableReplicas > 0
-		By(fmt.Sprintf("Control plane %s: desired=%d, status=%d, updated=%d, ready=%d, unavailable=%d", klog.KObj(controlplane), *desiredReplicas, statusReplicas, updatedReplicas, readyReplicas, unavailableReplicas))
+		By(fmt.Sprintf("Control plane %s: desired=%d, status=%d, upToDate=%d, ready=%d, unavailable=%d", klog.KObj(controlplane), *desiredReplicas, statusReplicas, upToDateReplicas, readyReplicas, unavailableReplicas))
 		if statusReplicas != *desiredReplicas ||
 			upToDateReplicas != *desiredReplicas ||
 			readyReplicas != *desiredReplicas ||
