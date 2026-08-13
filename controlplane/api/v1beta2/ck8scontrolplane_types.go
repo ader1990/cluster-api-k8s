@@ -203,7 +203,7 @@ type CK8sControlPlaneStatus struct {
 	// Total number of non-terminated machines targeted by this control plane
 	// that have the desired template spec.
 	// +optional
-	UpdatedReplicas int32 `json:"updatedReplicas,omitempty"`
+	UpToDateReplicas int32 `json:"upToDateReplicas,omitempty"`
 
 	// Total number of fully running and ready control plane machines.
 	// +optional

@@ -343,7 +343,6 @@ func (r *CK8sControlPlaneReconciler) updateStatus(ctx context.Context, kcp *cont
 		logger.Error(err, "failed to initialize control plane")
 		return err
 	}
-	kcp.Status.UpdatedReplicas = int32(len(controlPlane.UpToDateMachines()))
 
 	replicas := int32(len(ownedMachines))
 	desiredReplicas := *kcp.Spec.Replicas
@@ -352,6 +351,7 @@ func (r *CK8sControlPlaneReconciler) updateStatus(ctx context.Context, kcp *cont
 	kcp.Status.Replicas = replicas
 	kcp.Status.ReadyReplicas = 0
 	kcp.Status.AvailableReplicas = kcp.Status.ReadyReplicas
+	kcp.Status.UpToDateReplicas = kcp.Status.ReadyReplicas
 	kcp.Status.UnavailableReplicas = replicas
 
 	lowestVersion := ownedMachines.LowestVersion()
@@ -410,6 +410,7 @@ func (r *CK8sControlPlaneReconciler) updateStatus(ctx context.Context, kcp *cont
 	logger.Info("ClusterStatus", "workload", status)
 
 	kcp.Status.ReadyReplicas = status.ReadyNodes
+	kcp.Status.UpToDateReplicas = kcp.Status.ReadyReplicas
 	kcp.Status.UnavailableReplicas = replicas - status.ReadyNodes
 	kcp.Status.AvailableReplicas = status.ReadyNodes
 
