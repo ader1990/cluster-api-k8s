@@ -200,15 +200,6 @@ type CK8sControlPlaneStatus struct {
 	// +optional
 	Version *string `json:"version,omitempty"`
 
-	// Total number of non-terminated machines targeted by this control plane
-	// that have the desired template spec.
-	// +optional
-	UpToDateReplicas int32 `json:"upToDateReplicas,omitempty"`
-
-	// Total number of fully running and ready control plane machines.
-	// +optional
-	ReadyReplicas int32 `json:"readyReplicas,omitempty"`
-
 	// Total number of unavailable machines targeted by this control plane.
 	// This is the total number of machines that are still required for
 	// the deployment to have 100% available capacity. They may either
@@ -216,11 +207,6 @@ type CK8sControlPlaneStatus struct {
 	// that still have not been created.
 	// +optional
 	UnavailableReplicas int32 `json:"unavailableReplicas,omitempty"`
-
-	// AvailableReplicas is the number of available replicas targeted by this CK8sControlPlane.
-	// A machine is considered available when Machine's Available condition is true.
-	// +optional
-	AvailableReplicas int32 `json:"availableReplicas,omitempty"`
 
 	// Initialized denotes whether or not the control plane is initialized.
 	// +optional
@@ -258,6 +244,20 @@ type CK8sControlPlaneStatus struct {
 	// NOTE: Fields in this struct are part of the Cluster API contract and are used to orchestrate initial Machine provisioning.
 	// +optional
 	Initialization CK8sControlPlaneInitializationStatus `json:"initialization,omitempty,omitzero"`
+
+	// readyReplicas is the number of ready replicas for this CK8sControlPlane. A machine is considered ready when Machine's Ready condition is true.
+	// +optional
+	ReadyReplicas *int32 `json:"readyReplicas,omitempty"`
+
+	// availableReplicas is the number of available replicas targeted by this CK8sControlPlane.
+	// A machine is considered available when Machine's Available condition is true.
+	// +optional
+	AvailableReplicas *int32 `json:"availableReplicas,omitempty"`
+
+	// upToDateReplicas is the number of up-to-date replicas targeted by this CK8sControlPlane.
+	// A machine is considered up-to-date when Machine's UpToDate condition is true.
+	// +optional
+	UpToDateReplicas *int32 `json:"upToDateReplicas,omitempty"`
 }
 
 // CK8sControlPlaneInitializationStatus provides observations of the CK8sControlPlane initialization process.

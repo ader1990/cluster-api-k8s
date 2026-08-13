@@ -30,6 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/controllers/external"
 	"sigs.k8s.io/cluster-api/util"
@@ -348,7 +349,8 @@ func (r *CK8sControlPlaneReconciler) updateStatus(ctx context.Context, kcp *cont
 
 	// set basic data that does not require interacting with the workload cluster
 	kcp.Status.Replicas = replicas
-	kcp.Status.ReadyReplicas = 0
+	zero := int32(0)
+	kcp.Status.ReadyReplicas = ptr.To(zero)
 	kcp.Status.AvailableReplicas = kcp.Status.ReadyReplicas
 	kcp.Status.UpToDateReplicas = kcp.Status.ReadyReplicas
 	kcp.Status.UnavailableReplicas = replicas
@@ -425,9 +427,9 @@ func (r *CK8sControlPlaneReconciler) updateStatus(ctx context.Context, kcp *cont
 		}
 	}
 
-	kcp.Status.ReadyReplicas = readyReplicas
-	kcp.Status.UpToDateReplicas = upToDateReplicas
-	kcp.Status.AvailableReplicas = availableReplicas
+	kcp.Status.ReadyReplicas = &readyReplicas
+	kcp.Status.UpToDateReplicas = &upToDateReplicas
+	kcp.Status.AvailableReplicas = &availableReplicas
 	kcp.Status.UnavailableReplicas = replicas - readyReplicas
 
 	enableDefaultNetwork := kcp.Spec.CK8sConfigSpec.InitConfig.GetEnableDefaultNetwork()
@@ -446,7 +448,7 @@ func (r *CK8sControlPlaneReconciler) updateStatus(ctx context.Context, kcp *cont
 	// and the CAPI ClusterCacheTracker can establish a remote connection.
 	// Nodes will transition to Ready once CNI is applied, at which point ReadyReplicas > 0 and
 	// the normal path also satisfies this condition.
-	if kcp.Status.ReadyReplicas > 0 ||
+	if kcp.Status.ReadyReplicas != nil && *kcp.Status.ReadyReplicas > 0 ||
 		(!enableDefaultNetwork && kcp.Status.Initialized && replicas > 0) {
 		kcp.Status.Ready = true
 		conditions.Set(kcp, metav1.Condition{
