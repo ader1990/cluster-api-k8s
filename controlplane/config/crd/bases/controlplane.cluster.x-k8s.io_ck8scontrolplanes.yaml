@@ -39,12 +39,20 @@ spec:
       type: integer
     - description: Total number of non-terminated machines targeted by this control
         plane that have the desired template spec
-      jsonPath: .status.updatedReplicas
+      jsonPath: .status.upToDateReplicas
       name: Updated
       type: integer
     - description: Total number of unavailable machines targeted by this control plane
       jsonPath: .status.unavailableReplicas
       name: Unavailable
+      type: integer
+    - description: The number of machines with Available condition true
+      jsonPath: .status.availableReplicas
+      name: Available
+      type: integer
+    - description: The number of machines with UpToDate condition true
+      jsonPath: .status.upToDateReplicas
+      name: Up-to-date
       type: integer
     name: v1beta2
     schema:
