@@ -100,7 +100,7 @@ spec:
       image:
         name: ${LXC_IMAGE_NAME}
 ---
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: MachineDeployment
 metadata:
   name: ${CLUSTER_NAME}-md-0
@@ -155,20 +155,23 @@ spec:
       extraKubeletArgs:
         --provider-id: "lxc:///{{ v1.local_hostname }}"
 ---
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: MachineHealthCheck
 metadata:
   name: ${CLUSTER_NAME}-mhc-0
   namespace: ${NAMESPACE}
 spec:
   clusterName: ${CLUSTER_NAME}
-  maxUnhealthy: 100%
-  nodeStartupTimeout: 30s
+  remediation:
+    triggerIf:
+      unhealthyLessThanOrEqualTo: 100%
   selector:
     matchLabels:
       cluster.x-k8s.io/control-plane: ""
       mhc-test: fail
-  unhealthyConditions:
-  - status: "False"
-    timeout: 10s
-    type: e2e.remediation.condition
+  checks:
+    nodeStartupTimeoutSeconds: 30
+    unhealthyNodeConditions:
+      - status: "False"
+        timeoutSeconds: 10
+        type: e2e.remediation.condition
