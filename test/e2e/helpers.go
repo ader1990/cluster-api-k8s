@@ -435,8 +435,8 @@ func WaitForControlPlaneToBeReady(ctx context.Context, input WaitForControlPlane
 		// * unavailableReplicas > 0
 		By(fmt.Sprintf("Control plane %s: desired=%d, status=%d, upToDate=%d, ready=%d, unavailable=%d", klog.KObj(controlplane), *desiredReplicas, statusReplicas, upToDateReplicas, readyReplicas, unavailableReplicas))
 		if statusReplicas != *desiredReplicas ||
-			upToDateReplicas != *desiredReplicas ||
-			readyReplicas != *desiredReplicas ||
+			upToDateReplicas != desiredReplicas ||
+			readyReplicas != desiredReplicas ||
 			unavailableReplicas > 0 {
 			return false, nil
 		}
