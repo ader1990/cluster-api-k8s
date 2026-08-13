@@ -9,7 +9,6 @@ import logging
 import os
 import re
 import subprocess
-from typing import List, Optional
 
 from packaging.version import InvalidVersion, Version
 
@@ -36,7 +35,7 @@ class ReleaseType(enum.Enum):
     UNKNOWN = "unknown"
 
 
-def _exec(cmd: List[str], check=True, timeout=EXEC_TIMEOUT, cwd=None):
+def _exec(cmd: list[str], check=True, timeout=EXEC_TIMEOUT, cwd=None):
     """Run the specified command and return the stdout/stderr output as a tuple."""
     LOG.debug("Executing: %s, cwd: %s.", cmd, cwd)
     proc = subprocess.run(
@@ -45,7 +44,7 @@ def _exec(cmd: List[str], check=True, timeout=EXEC_TIMEOUT, cwd=None):
     return proc.stdout, proc.stderr
 
 
-def get_tags(ref: str = "", clone_dir: Optional[str] = None) -> List[str]:
+def get_tags(ref: str = "", clone_dir: str | None = None) -> list[str]:
     """Returns all git tags.
 
     ref: can be a branch (e.g. $ref/$branch), in which case only the tags
@@ -55,18 +54,18 @@ def get_tags(ref: str = "", clone_dir: Optional[str] = None) -> List[str]:
     cmd = ["git", "tag", "-l", "--merged"]
     if ref:
         cmd.append(ref)
-    stdout, stderr = _exec(cmd, cwd=clone_dir)
+    stdout, _stderr = _exec(cmd, cwd=clone_dir)
     return [tag.strip(" ") for tag in stdout.split("\n") if tag]
 
 
-def fetch_remote(remote: str = "origin", clone_dir: Optional[str] = None):
+def fetch_remote(remote: str = "origin", clone_dir: str | None = None):
     cmd = ["git", "fetch", remote]
     _exec(cmd, cwd=clone_dir)
 
 
 def get_tags_pointing_at_commit(
-    commit_id: str, clone_dir: Optional[str] = None
-) -> List[str]:
+    commit_id: str, clone_dir: str | None = None
+) -> list[str]:
     """Returns all git tags that point to a given commit.
 
     commit_id: the commit id associated with the tags.
@@ -76,16 +75,16 @@ def get_tags_pointing_at_commit(
         raise ValueError("No commit specified.")
 
     cmd = ["git", "tag", "--points-at", commit_id]
-    stdout, stderr = _exec(cmd, cwd=clone_dir)
+    stdout, _stderr = _exec(cmd, cwd=clone_dir)
     return [tag.strip(" ") for tag in stdout.split("\n") if tag]
 
 
-def get_tag_timestamp(tag: str, clone_dir: Optional[str] = None) -> datetime.datetime:
+def get_tag_timestamp(tag: str, clone_dir: str | None = None) -> datetime.datetime:
     if not tag:
         raise ValueError("No tag specified.")
 
     cmd = ["git", "tag", "-l", tag, "--format", r"%(creatordate:unix)"]
-    stdout, stderr = _exec(cmd, cwd=clone_dir)
+    stdout, _stderr = _exec(cmd, cwd=clone_dir)
     timestamps = [tag.strip(" ") for tag in stdout.split("\n") if tag]
     if len(timestamps) > 1:
         raise ValueError(f"Multiple timestamps detected for tag {tag}: {timestamps}.")
@@ -101,21 +100,21 @@ def get_tag_timestamp(tag: str, clone_dir: Optional[str] = None) -> datetime.dat
         )
 
 
-def get_tag_age(tag: str, clone_dir: Optional[str] = None) -> datetime.timedelta:
+def get_tag_age(tag: str, clone_dir: str | None = None) -> datetime.timedelta:
     timestamp = get_tag_timestamp(tag, clone_dir)
     return datetime.datetime.now(datetime.UTC) - timestamp
 
 
-def get_branches(clone_dir: Optional[str] = None) -> List[str]:
+def get_branches(clone_dir: str | None = None) -> list[str]:
     """Returns all branches.
 
     clone_dir: the git clone location.
     """
-    stdout, stderr = _exec(["git", "branch", "-r"], cwd=clone_dir)
+    stdout, _stderr = _exec(["git", "branch", "-r"], cwd=clone_dir)
     return [branch.strip(" ") for branch in stdout.split("\n") if branch]
 
 
-def create_tag(name: str, commit_id: str, clone_dir: Optional[str] = None):
+def create_tag(name: str, commit_id: str, clone_dir: str | None = None):
     if not name:
         raise ValueError("Missing tag name.")
 
@@ -126,7 +125,7 @@ def create_tag(name: str, commit_id: str, clone_dir: Optional[str] = None):
     _exec(cmd, cwd=clone_dir)
 
 
-def push_tag(name: str, remote: str = "origin", clone_dir: Optional[str] = None):
+def push_tag(name: str, remote: str = "origin", clone_dir: str | None = None):
     if not name:
         raise ValueError("Missing tag name.")
 
@@ -135,8 +134,8 @@ def push_tag(name: str, remote: str = "origin", clone_dir: Optional[str] = None)
 
 
 def get_managed_branches(
-    clone_dir: Optional[str] = None, remote: str = "origin"
-) -> List[str]:
+    clone_dir: str | None = None, remote: str = "origin"
+) -> list[str]:
     branches = get_branches(clone_dir=clone_dir)
 
     managed_branches = []
@@ -147,19 +146,19 @@ def get_managed_branches(
     return managed_branches
 
 
-def get_commit_id(ref: str, clone_dir: Optional[str] = None) -> str:
+def get_commit_id(ref: str, clone_dir: str | None = None) -> str:
     """Returns the latest commit id for a given ref (e.g. tag, branch, etc)"""
     if not ref:
         raise ValueError("No ref specified.")
 
-    stdout, stderr = _exec(["git", "rev-list", "-n", "1", ref], cwd=clone_dir)
+    stdout, _stderr = _exec(["git", "rev-list", "-n", "1", ref], cwd=clone_dir)
     commit_id = stdout.strip(" \n")
     if not commit_id:
         raise LookupError(f"No commit found for ref: {ref}")
     return commit_id
 
 
-def get_versions(ref: str = "", clone_dir: Optional[str] = None) -> List[Version]:
+def get_versions(ref: str = "", clone_dir: str | None = None) -> list[Version]:
     """Returns all semantic versions based on the git tags.
 
     ref: can be a branch (e.g. $ref/$branch), in which case only the tags
@@ -180,7 +179,7 @@ def get_versions(ref: str = "", clone_dir: Optional[str] = None) -> List[Version
     return versions
 
 
-def get_latest_version(ref: str = "", clone_dir: Optional[str] = None) -> Version:
+def get_latest_version(ref: str = "", clone_dir: str | None = None) -> Version:
     versions = get_versions(ref=ref, clone_dir=clone_dir)
     if not versions:
         raise ValueError("No versions detected.")
@@ -190,7 +189,7 @@ def get_latest_version(ref: str = "", clone_dir: Optional[str] = None) -> Versio
 def get_next_prerelease_version(
     release_type: ReleaseType = ReleaseType.MINOR,
     ref: str = "",
-    clone_dir: Optional[str] = None,
+    clone_dir: str | None = None,
 ) -> Version:
     """Get the next prerelease version for the specified branch.
 
@@ -216,7 +215,7 @@ def get_next_prerelease_version(
     return Version(version_str)
 
 
-def get_promoted_release(release: Version, all_versions: List[Version]) -> Version:
+def get_promoted_release(release: Version, all_versions: list[Version]) -> Version:
     if not release.pre:
         raise ValueError(
             f"Not a prerelease: {release}. Stable releases do not get promoted."
@@ -277,7 +276,7 @@ def version_to_tag(version: Version) -> str:
 
 
 def create_new_prereleases(
-    dry_run: bool = False, clone_dir: Optional[str] = None, remote: str = "origin"
+    dry_run: bool = False, clone_dir: str | None = None, remote: str = "origin"
 ):
     fetch_remote(remote=remote, clone_dir=clone_dir)
 
@@ -331,7 +330,7 @@ def create_new_prereleases(
 
 
 def newer_release_available_same_minor(
-    version: Version, all_versions: List[Version]
+    version: Version, all_versions: list[Version]
 ) -> bool:
     for other_version in all_versions:
         if (
@@ -344,7 +343,7 @@ def newer_release_available_same_minor(
 
 
 def stable_release_available_same_minor(
-    major: int, minor: int, all_versions: List[Version]
+    major: int, minor: int, all_versions: list[Version]
 ) -> bool:
     for version in all_versions:
         if version.pre:
@@ -359,7 +358,7 @@ def promote_release(
     from_version: Version,
     to_version: Version,
     dry_run: bool,
-    clone_dir: Optional[str],
+    clone_dir: str | None,
     remote: str,
 ):
     from_tag = version_to_tag(from_version)
@@ -375,7 +374,7 @@ def promote_release(
 def promote_releases(
     dry_run: bool = False,
     promote_immediately=False,
-    clone_dir: Optional[str] = None,
+    clone_dir: str | None = None,
     remote: str = "origin",
 ):
     fetch_remote(remote=remote, clone_dir=clone_dir)
