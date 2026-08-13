@@ -135,11 +135,15 @@ metadata:
   name: "${CLUSTER_NAME}-mhc-0"
 spec:
   clusterName: "${CLUSTER_NAME}"
-  maxUnhealthy: 100%
+  remediation:
+    triggerIf:
+      unhealthyLessThanOrEqualTo: 100%
   selector:
     matchLabels:
       e2e.remediation.label: ""
-  unhealthyConditions:
-    - type: e2e.remediation.condition
-      status: "False"
-      timeout: 10s
+  checks:
+    nodeStartupTimeoutSeconds: 30
+    unhealthyNodeConditions:
+      - type: e2e.remediation.condition
+        status: "False"
+        timeout: 10s
