@@ -144,6 +144,6 @@ spec:
   checks:
     nodeStartupTimeoutSeconds: 30
     unhealthyNodeConditions:
-      - type: e2e.remediation.condition
-        status: "False"
-        timeout: 10s
+      - status: "False"
+        timeoutSeconds: 10
+        type: e2e.remediation.condition
