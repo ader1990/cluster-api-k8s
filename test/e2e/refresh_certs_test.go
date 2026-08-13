@@ -91,7 +91,7 @@ var _ = Describe("Certificate Refresh", func() {
 					InfrastructureProvider:   infrastructureProvider,
 					Namespace:                namespace.Name,
 					ClusterName:              clusterName,
-					KubernetesVersion:        e2eConfig.GetVariable(KubernetesVersion),
+					KubernetesVersion:        e2eConfig.GetVariableOrEmpty(KubernetesVersion),
 					ControlPlaneMachineCount: ptr.To(int64(1)),
 					WorkerMachineCount:       ptr.To(int64(1)),
 				},
