@@ -328,6 +328,25 @@ func (r *CK8sControlPlaneReconciler) ClusterToCK8sControlPlane(_ context.Context
 
 	return nil
 }
+func setReplicas(_ context.Context, kcp *controlplanev1.CK8sControlPlane, machines collections.Machines) {
+	var readyReplicas, availableReplicas, upToDateReplicas int32
+	for _, machine := range machines {
+		if conditions.IsTrue(machine, clusterv1.MachineReadyCondition) {
+			readyReplicas++
+		}
+		if conditions.IsTrue(machine, clusterv1.MachineAvailableCondition) {
+			availableReplicas++
+		}
+		if conditions.IsTrue(machine, clusterv1.MachineUpToDateCondition) {
+			upToDateReplicas++
+		}
+	}
+
+	kcp.Status.Replicas = int32(len(machines))
+	kcp.Status.ReadyReplicas = ptr.To(readyReplicas)
+	kcp.Status.AvailableReplicas = ptr.To(availableReplicas)
+	kcp.Status.UpToDateReplicas = ptr.To(upToDateReplicas)
+}
 
 // updateStatus is called after every reconcilitation loop in a defer statement to always make sure we have the
 // resource status subresourcs up-to-date.
@@ -354,13 +373,6 @@ func (r *CK8sControlPlaneReconciler) updateStatus(ctx context.Context, kcp *cont
 
 	// set basic data that does not require interacting with the workload cluster
 	kcp.Status.Replicas = replicas
-	readyReplicas := int32(0)
-	availableReplicas := int32(0)
-	upToDateReplicas := int32(0)
-	kcp.Status.ReadyReplicas = ptr.To(readyReplicas)
-	kcp.Status.AvailableReplicas = ptr.To(availableReplicas)
-	kcp.Status.UpToDateReplicas = ptr.To(upToDateReplicas)
-	kcp.Status.UnavailableReplicas = replicas
 
 	lowestVersion := ownedMachines.LowestVersion()
 	if lowestVersion != "" {
@@ -416,26 +428,7 @@ func (r *CK8sControlPlaneReconciler) updateStatus(ctx context.Context, kcp *cont
 	}
 
 	logger.Info("ClusterStatus", "workload", status)
-
-	for _, machine := range ownedMachines {
-		if conditions.IsTrue(machine, clusterv1.MachineReadyCondition) {
-			readyReplicas++
-		}
-
-		if conditions.IsTrue(machine, clusterv1.MachineAvailableCondition) {
-			availableReplicas++
-		}
-
-		if conditions.IsTrue(machine, clusterv1.MachineUpToDateCondition) {
-			upToDateReplicas++
-		}
-	}
-
-	kcp.Status.ReadyReplicas = ptr.To(readyReplicas)
-	kcp.Status.UpToDateReplicas = ptr.To(upToDateReplicas)
-	kcp.Status.AvailableReplicas = ptr.To(availableReplicas)
-	kcp.Status.UnavailableReplicas = replicas - readyReplicas
-
+	setReplicas(ctx, kcp, ownedMachines)
 	enableDefaultNetwork := kcp.Spec.CK8sConfigSpec.InitConfig.GetEnableDefaultNetwork()
 
 	// NOTE(neoaggelos): We consider the control plane to be initialized iff the k8sd-config exists.
