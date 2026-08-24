@@ -354,10 +354,12 @@ func (r *CK8sControlPlaneReconciler) updateStatus(ctx context.Context, kcp *cont
 
 	// set basic data that does not require interacting with the workload cluster
 	kcp.Status.Replicas = replicas
-	zero := int32(0)
-	kcp.Status.ReadyReplicas = ptr.To(zero)
-	kcp.Status.AvailableReplicas = kcp.Status.ReadyReplicas
-	kcp.Status.UpToDateReplicas = kcp.Status.ReadyReplicas
+	readyReplicas := int32(0)
+	availableReplicas := int32(0)
+	upToDateReplicas := int32(0)
+	kcp.Status.ReadyReplicas = ptr.To(readyReplicas)
+	kcp.Status.AvailableReplicas = ptr.To(availableReplicas)
+	kcp.Status.UpToDateReplicas = ptr.To(upToDateReplicas)
 	kcp.Status.UnavailableReplicas = replicas
 
 	lowestVersion := ownedMachines.LowestVersion()
@@ -415,9 +417,6 @@ func (r *CK8sControlPlaneReconciler) updateStatus(ctx context.Context, kcp *cont
 
 	logger.Info("ClusterStatus", "workload", status)
 
-	readyReplicas := int32(0)
-	availableReplicas := int32(0)
-	upToDateReplicas := int32(0)
 	for _, machine := range ownedMachines {
 		if conditions.IsTrue(machine, clusterv1.MachineReadyCondition) {
 			readyReplicas++
@@ -432,9 +431,9 @@ func (r *CK8sControlPlaneReconciler) updateStatus(ctx context.Context, kcp *cont
 		}
 	}
 
-	kcp.Status.ReadyReplicas = &readyReplicas
-	kcp.Status.UpToDateReplicas = &upToDateReplicas
-	kcp.Status.AvailableReplicas = &availableReplicas
+	kcp.Status.ReadyReplicas = ptr.To(readyReplicas)
+	kcp.Status.UpToDateReplicas = ptr.To(upToDateReplicas)
+	kcp.Status.AvailableReplicas = ptr.To(availableReplicas)
 	kcp.Status.UnavailableReplicas = replicas - readyReplicas
 
 	enableDefaultNetwork := kcp.Spec.CK8sConfigSpec.InitConfig.GetEnableDefaultNetwork()
