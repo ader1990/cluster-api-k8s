@@ -21,7 +21,7 @@ limitations under the License.
 package v1beta2
 
 import (
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
@@ -179,6 +179,21 @@ func (in *CK8sControlPlaneStatus) DeepCopyInto(out *CK8sControlPlaneStatus) {
 	if in.Version != nil {
 		in, out := &in.Version, &out.Version
 		*out = new(string)
+		**out = **in
+	}
+	if in.ReadyReplicas != nil {
+		in, out := &in.ReadyReplicas, &out.ReadyReplicas
+		*out = new(int32)
+		**out = **in
+	}
+	if in.AvailableReplicas != nil {
+		in, out := &in.AvailableReplicas, &out.AvailableReplicas
+		*out = new(int32)
+		**out = **in
+	}
+	if in.UpToDateReplicas != nil {
+		in, out := &in.UpToDateReplicas, &out.UpToDateReplicas
+		*out = new(int32)
 		**out = **in
 	}
 	if in.FailureMessage != nil {
