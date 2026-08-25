@@ -8,43 +8,36 @@ metadata:
 spec:
   group: controlplane.cluster.x-k8s.io
   names:
+    categories:
+    - cluster-api
     kind: CK8sControlPlane
     listKind: CK8sControlPlaneList
     plural: ck8scontrolplanes
+    shortNames:
+    - ck8s
     singular: ck8scontrolplane
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
-    - description: This denotes whether or not the control plane has completed the
-        initialization
-      jsonPath: .status.initialized
-      name: Initialized
-      type: boolean
-    - description: CK8sControlPlane API Server is ready to receive requests
-      jsonPath: .status.ready
-      name: API Server Available
-      type: boolean
-    - description: Kubernetes version associated with this control plane
-      jsonPath: .spec.version
-      name: Version
+    - description: Cluster
+      jsonPath: .metadata.labels['cluster\.x-k8s\.io/cluster-name']
+      name: Cluster
       type: string
-    - description: Total number of non-terminated machines targeted by this control
-        plane
-      jsonPath: .status.replicas
-      name: Replicas
+    - description: Cluster pass all availability checks
+      jsonPath: .status.conditions[?(@.type=="Available")].status
+      name: Available
+      type: string
+    - description: The desired number of machines
+      jsonPath: .spec.replicas
+      name: Desired
       type: integer
-    - description: Total number of fully running and ready control plane machines
+    - description: The number of machines
+      jsonPath: .status.replicas
+      name: Current
+      type: integer
+    - description: The number of machines with Ready condition true
       jsonPath: .status.readyReplicas
       name: Ready
-      type: integer
-    - description: Total number of non-terminated machines targeted by this control
-        plane that have the desired template spec
-      jsonPath: .status.upToDateReplicas
-      name: Updated
-      type: integer
-    - description: Total number of unavailable machines targeted by this control plane
-      jsonPath: .status.unavailableReplicas
-      name: Unavailable
       type: integer
     - description: The number of machines with Available condition true
       jsonPath: .status.availableReplicas
@@ -54,6 +47,23 @@ spec:
       jsonPath: .status.upToDateReplicas
       name: Up-to-date
       type: integer
+    - description: Reconciliation paused
+      jsonPath: .status.conditions[?(@.type=="Paused")].status
+      name: Paused
+      priority: 10
+      type: string
+    - description: This denotes whether or not the control plane can accept requests
+      jsonPath: .status.initialization.controlPlaneInitialized
+      name: Initialized
+      type: boolean
+    - description: Time duration since creation of Ck8sControlPlane resource
+      jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    - description: Kubernetes version associated with this control plane
+      jsonPath: .spec.version
+      name: Version
+      type: string
     name: v1beta2
     schema:
       openAPIV3Schema:
@@ -668,10 +678,6 @@ spec:
                       NOTE: this field is part of the Cluster API contract, and it is used to orchestrate initial Machine provisioning.
                     type: boolean
                 type: object
-              initialized:
-                description: Initialized denotes whether or not the control plane
-                  is initialized.
-                type: boolean
               lastRemediation:
                 description: LastRemediation stores info about last remediation performed.
                 properties:
@@ -700,11 +706,6 @@ spec:
                   by the controller.
                 format: int64
                 type: integer
-              ready:
-                description: |-
-                  Ready denotes that the CK8sControlPlane API Server is ready to
-                  receive requests.
-                type: boolean
               readyReplicas:
                 description: readyReplicas is the number of ready replicas for this
                   CK8sControlPlane. A machine is considered ready when Machine's Ready
@@ -725,15 +726,6 @@ spec:
                   describe.. The string will be in the same format as the query-param syntax.
                   More info about label selectors: http://kubernetes.io/docs/user-guide/labels#label-selectors
                 type: string
-              unavailableReplicas:
-                description: |-
-                  Total number of unavailable machines targeted by this control plane.
-                  This is the total number of machines that are still required for
-                  the deployment to have 100% available capacity. They may either
-                  be machines that are running but not yet ready or machines
-                  that still have not been created.
-                format: int32
-                type: integer
               upToDateReplicas:
                 description: |-
                   upToDateReplicas is the number of up-to-date replicas targeted by this CK8sControlPlane.
