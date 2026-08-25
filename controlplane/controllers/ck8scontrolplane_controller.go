@@ -368,7 +368,7 @@ func (r *CK8sControlPlaneReconciler) updateStatus(ctx context.Context, kcp *cont
 		logger.Error(err, "failed to initialize control plane")
 		return err
 	}
-
+	kcp.Status.Initialization.ControlPlaneInitialized = pointer.Bool(true)
 	replicas := int32(len(ownedMachines))
 	desiredReplicas := *kcp.Spec.Replicas
 
@@ -433,7 +433,7 @@ func (r *CK8sControlPlaneReconciler) updateStatus(ctx context.Context, kcp *cont
 	setInitializedCondition(ctx, kcp)
 	enableDefaultNetwork := kcp.Spec.CK8sConfigSpec.InitConfig.GetEnableDefaultNetwork()
 
-	// NOTE(neoaggelos): We consider the control plane to be initialized iff the k8sd-config exists.
+	// NOTE(neoaggelos): We consider the control plane to be initialized if the k8sd-config exists.
 	// When enableDefaultNetwork is false (user-managed CNI), k8sd-config may not appear until CNI
 	// is installed, so we fall back to API-server accessibility (ClusterStatus succeeded + replicas
 	// exist) to break the initialization deadlock and allow the MAAS controller to proceed.
