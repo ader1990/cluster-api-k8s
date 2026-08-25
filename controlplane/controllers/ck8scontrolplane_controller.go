@@ -430,6 +430,7 @@ func (r *CK8sControlPlaneReconciler) updateStatus(ctx context.Context, kcp *cont
 
 	logger.Info("ClusterStatus", "workload", status)
 	setReplicas(ctx, kcp, ownedMachines)
+	setInitializedCondition(ctx, kcp)
 	enableDefaultNetwork := kcp.Spec.CK8sConfigSpec.InitConfig.GetEnableDefaultNetwork()
 
 	// NOTE(neoaggelos): We consider the control plane to be initialized iff the k8sd-config exists.
@@ -486,6 +487,23 @@ func (r *CK8sControlPlaneReconciler) updateStatus(ctx context.Context, kcp *cont
 	}
 
 	return nil
+}
+
+func setInitializedCondition(_ context.Context, kcp *controlplanev1.CK8sControlPlane) {
+	if ptr.Deref(kcp.Status.Initialization.ControlPlaneInitialized, false) {
+		conditions.Set(kcp, metav1.Condition{
+			Type:   clusterv1.ClusterControlPlaneInitializedCondition,
+			Status: metav1.ConditionTrue,
+			Reason: clusterv1.ClusterControlPlaneInitializedReason,
+		})
+		return
+	}
+
+	conditions.Set(kcp, metav1.Condition{
+		Type:   clusterv1.ClusterControlPlaneInitializedCondition,
+		Status: metav1.ConditionFalse,
+		Reason: clusterv1.ClusterControlPlaneNotInitializedReason,
+	})
 }
 
 // reconcile handles CK8sControlPlane reconciliation.
