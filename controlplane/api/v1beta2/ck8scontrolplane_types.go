@@ -200,23 +200,6 @@ type CK8sControlPlaneStatus struct {
 	// +optional
 	Version *string `json:"version,omitempty"`
 
-	// Total number of unavailable machines targeted by this control plane.
-	// This is the total number of machines that are still required for
-	// the deployment to have 100% available capacity. They may either
-	// be machines that are running but not yet ready or machines
-	// that still have not been created.
-	// +optional
-	UnavailableReplicas int32 `json:"unavailableReplicas,omitempty"`
-
-	// Initialized denotes whether or not the control plane is initialized.
-	// +optional
-	Initialized bool `json:"initialized"`
-
-	// Ready denotes that the CK8sControlPlane API Server is ready to
-	// receive requests.
-	// +optional
-	Ready bool `json:"ready"`
-
 	// FailureReason indicates that there is a terminal problem reconciling the
 	// state, and will be set to a token value suitable for
 	// programmatic interpretation.
@@ -287,18 +270,21 @@ type LastRemediationStatus struct {
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:path=ck8scontrolplanes,shortName=ck8s,scope=Namespaced,categories=cluster-api
 // +kubebuilder:storageversion
 // +kubebuilder:subresource:status
 // +kubebuilder:subresource:scale:specpath=.spec.replicas,statuspath=.status.replicas,selectorpath=.status.selector
-// +kubebuilder:printcolumn:name="Initialized",type=boolean,JSONPath=".status.initialized",description="This denotes whether or not the control plane has completed the initialization"
-// +kubebuilder:printcolumn:name="API Server Available",type=boolean,JSONPath=".status.ready",description="CK8sControlPlane API Server is ready to receive requests"
-// +kubebuilder:printcolumn:name="Version",type=string,JSONPath=".spec.version",description="Kubernetes version associated with this control plane"
-// +kubebuilder:printcolumn:name="Replicas",type=integer,JSONPath=".status.replicas",description="Total number of non-terminated machines targeted by this control plane"
-// +kubebuilder:printcolumn:name="Ready",type=integer,JSONPath=".status.readyReplicas",description="Total number of fully running and ready control plane machines"
-// +kubebuilder:printcolumn:name="Updated",type=integer,JSONPath=".status.upToDateReplicas",description="Total number of non-terminated machines targeted by this control plane that have the desired template spec"
-// +kubebuilder:printcolumn:name="Unavailable",type=integer,JSONPath=".status.unavailableReplicas",description="Total number of unavailable machines targeted by this control plane"
+// +kubebuilder:printcolumn:name="Cluster",type="string",JSONPath=".metadata.labels['cluster\\.x-k8s\\.io/cluster-name']",description="Cluster"
+// +kubebuilder:printcolumn:name="Available",type="string",JSONPath=`.status.conditions[?(@.type=="Available")].status`,description="Cluster pass all availability checks"
+// +kubebuilder:printcolumn:name="Desired",type=integer,JSONPath=".spec.replicas",description="The desired number of machines"
+// +kubebuilder:printcolumn:name="Current",type="integer",JSONPath=".status.replicas",description="The number of machines"
+// +kubebuilder:printcolumn:name="Ready",type="integer",JSONPath=".status.readyReplicas",description="The number of machines with Ready condition true"
 // +kubebuilder:printcolumn:name="Available",type=integer,JSONPath=".status.availableReplicas",description="The number of machines with Available condition true"
 // +kubebuilder:printcolumn:name="Up-to-date",type=integer,JSONPath=".status.upToDateReplicas",description="The number of machines with UpToDate condition true"
+// +kubebuilder:printcolumn:name="Paused",type="string",JSONPath=`.status.conditions[?(@.type=="Paused")].status`,description="Reconciliation paused",priority=10
+// +kubebuilder:printcolumn:name="Initialized",type=boolean,JSONPath=".status.initialization.controlPlaneInitialized",description="This denotes whether or not the control plane can accept requests"
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp",description="Time duration since creation of Ck8sControlPlane resource"
+// +kubebuilder:printcolumn:name="Version",type=string,JSONPath=".spec.version",description="Kubernetes version associated with this control plane"
 
 // CK8sControlPlane is the Schema for the ck8scontrolplanes API.
 type CK8sControlPlane struct {

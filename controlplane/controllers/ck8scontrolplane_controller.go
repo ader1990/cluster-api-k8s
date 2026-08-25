@@ -31,6 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/utils/pointer"
 	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/controllers/external"
@@ -163,7 +164,7 @@ func (r *CK8sControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		logger.Info("Checking if to requeueing CK8sControlPlane")
 		if err == nil && !res.Requeue && res.RequeueAfter <= 0 && kcp.DeletionTimestamp.IsZero() {
 			logger.Info("Checking if to requeueing CK8sControlPlane for not ready status")
-			if !kcp.Status.Ready {
+			if kcp.Status.Initialization.ControlPlaneInitialized == nil || !*kcp.Status.Initialization.ControlPlaneInitialized {
 				logger.Info("Requeueing CK8sControlPlane for not ready status", "requeueAfter", 20*time.Second)
 				res = ctrl.Result{RequeueAfter: 20 * time.Second}
 			}
@@ -436,7 +437,7 @@ func (r *CK8sControlPlaneReconciler) updateStatus(ctx context.Context, kcp *cont
 	// is installed, so we fall back to API-server accessibility (ClusterStatus succeeded + replicas
 	// exist) to break the initialization deadlock and allow the MAAS controller to proceed.
 	if status.HasK8sdConfigMap || (!enableDefaultNetwork && replicas > 0) {
-		kcp.Status.Initialized = true
+		kcp.Status.Initialization.ControlPlaneInitialized = pointer.Bool(true)
 	}
 
 	// When default network is disabled, nodes remain NotReady until the external CNI is
@@ -446,13 +447,12 @@ func (r *CK8sControlPlaneReconciler) updateStatus(ctx context.Context, kcp *cont
 	// Nodes will transition to Ready once CNI is applied, at which point ReadyReplicas > 0 and
 	// the normal path also satisfies this condition.
 	if kcp.Status.ReadyReplicas != nil && *kcp.Status.ReadyReplicas > 0 ||
-		(!enableDefaultNetwork && kcp.Status.Initialized && replicas > 0) {
-		kcp.Status.Ready = true
+		(!enableDefaultNetwork && kcp.Status.Initialization.ControlPlaneInitialized != nil && *kcp.Status.Initialization.ControlPlaneInitialized && replicas > 0) {
 		conditions.Set(kcp, metav1.Condition{
 			Type:    string(controlplanev1.AvailableCondition),
 			Status:  metav1.ConditionTrue,
-			Reason:  "ControlPlaneAvailable",
-			Message: "Successfully AvailableCondition: Control plane is available",
+			Reason:  "Available",
+			Message: "",
 		})
 	}
 
@@ -738,7 +738,7 @@ func (r *CK8sControlPlaneReconciler) reconcileKubeconfig(ctx context.Context, cl
 func (r *CK8sControlPlaneReconciler) reconcileControlPlaneConditions(ctx context.Context, controlPlane *ck8s.ControlPlane) error {
 	// If the cluster is not yet initialized, there is no way to connect to the workload cluster and fetch information
 	// for updating conditions. Return early.
-	if !controlPlane.KCP.Status.Initialized {
+	if controlPlane.KCP.Status.Initialization.ControlPlaneInitialized == nil || !*controlPlane.KCP.Status.Initialization.ControlPlaneInitialized {
 		return nil
 	}
 
