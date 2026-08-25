@@ -859,6 +859,7 @@ func (r *CK8sConfigReconciler) storeBootstrapData(ctx context.Context, scope *Sc
 
 	scope.Config.Status.DataSecretName = ptr.To(secret.Name)
 	scope.Config.Status.Ready = true
+	scope.Config.Status.Initialization.DataSecretCreated = ptr.To(true)
 	conditions.Set(scope.Config, metav1.Condition{
 		Type:    string(bootstrapv1.DataSecretAvailableCondition),
 		Status:  metav1.ConditionTrue,

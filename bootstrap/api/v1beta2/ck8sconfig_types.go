@@ -324,6 +324,20 @@ type CK8sConfigStatus struct {
 	// Conditions defines current service state of the CK8sConfig.
 	// +optional
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
+
+	// initialization provides observations of the CK8sConfig initialization process.
+	// NOTE: Fields in this struct are part of the Cluster API contract and are used to orchestrate initial Machine provisioning.
+	// +optional
+	Initialization Ck8sConfigInitializationStatus `json:"initialization,omitempty,omitzero"`
+}
+
+// Ck8sConfigInitializationStatus provides observations of the Ck8sConfig initialization process.
+// +kubebuilder:validation:MinProperties=1
+type Ck8sConfigInitializationStatus struct {
+	// dataSecretCreated is true when the Machine's boostrap secret is created.
+	// NOTE: this field is part of the Cluster API contract, and it is used to orchestrate initial Machine provisioning.
+	// +optional
+	DataSecretCreated *bool `json:"dataSecretCreated,omitempty"`
 }
 
 // +kubebuilder:object:root=true
