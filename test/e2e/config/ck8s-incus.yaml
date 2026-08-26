@@ -16,7 +16,7 @@ providers:
     type: CoreProvider
     versions:
       - name: v1.13.4
-        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.13.4/core-components.yaml
+        value: https://github.com/ader1990/cluster-api/releases/download/v1.13.4/core-components.yaml
         type: url
         files:
           - sourcePath: "../data/shared/v1beta1/metadata.yaml"
@@ -27,8 +27,8 @@ providers:
     type: InfrastructureProvider
     versions:
       # Latest stable version
-      - name: v0.8.3
-        value: https://github.com/lxc/cluster-api-provider-incus/releases/download/v0.8.3/infrastructure-components.yaml
+      - name: v0.9.0
+        value: https://github.com/lxc/cluster-api-provider-incus/releases/download/v0.9.0/infrastructure-components.yaml
         type: url
         files:
           - sourcePath: "../data/shared/v1beta1_incus/metadata.yaml"

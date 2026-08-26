@@ -193,7 +193,7 @@ func (r *CK8sConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 
 	// Note: can't use IsFalse here because we need to handle the absence of the condition as well as false.
-	if !conditions.IsTrue(cluster, clusterv1.ClusterControlPlaneInitializedCondition) {
+	if !conditions.IsTrue(cluster, clusterv1.ClusterControlPlaneAvailableCondition) {
 		return r.handleClusterNotInitialized(ctx, scope)
 	}
 
@@ -859,6 +859,7 @@ func (r *CK8sConfigReconciler) storeBootstrapData(ctx context.Context, scope *Sc
 
 	scope.Config.Status.DataSecretName = ptr.To(secret.Name)
 	scope.Config.Status.Ready = true
+	scope.Config.Status.Initialization.DataSecretCreated = ptr.To(true)
 	conditions.Set(scope.Config, metav1.Condition{
 		Type:    string(bootstrapv1.DataSecretAvailableCondition),
 		Status:  metav1.ConditionTrue,

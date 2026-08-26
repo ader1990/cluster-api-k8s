@@ -174,7 +174,9 @@ func (r *CK8sControlPlaneReconciler) preflightChecks(_ context.Context, controlP
 
 	// Check machine health conditions; if there are conditions with False or Unknown, then wait.
 	allMachineHealthConditions := []string{
-		controlplanev1.CK8sControlPlaneMachineAgentHealthyCondition,
+		clusterv1.MachineReadyCondition,
+		clusterv1.MachineAvailableCondition,
+		clusterv1.MachineUpToDateCondition,
 	}
 	machineErrors := []error{}
 
@@ -189,7 +191,7 @@ loopmachines:
 		}
 
 		for _, condition := range allMachineHealthConditions {
-			if err := preflightCheckCondition("machine", machine, condition); err != nil {
+			if err := preflightCheckCondition(machine, condition); err != nil {
 				machineErrors = append(machineErrors, err)
 			}
 		}
@@ -207,17 +209,9 @@ loopmachines:
 	return ctrl.Result{}, nil
 }
 
-func preflightCheckCondition(kind string, obj conditions.Getter, condition string) error {
-	c := conditions.Get(obj, condition)
-	objName := obj.(metav1.ObjectMetaAccessor).GetObjectMeta().GetName()
-	if c == nil {
-		return fmt.Errorf("%s %s does not have %s condition: %w", kind, objName, condition, ErrPreConditionFailed)
-	}
-	if c.Status == metav1.ConditionFalse {
-		return fmt.Errorf("%s %s reports %s condition is false (%s, %s): %w", kind, objName, condition, c.Reason, c.Message, ErrPreConditionFailed)
-	}
-	if c.Status == metav1.ConditionUnknown {
-		return fmt.Errorf("%s %s reports %s condition is unknown (%s): %w", kind, objName, condition, c.Message, ErrPreConditionFailed)
+func preflightCheckCondition(machine *clusterv1.Machine, condition string) error {
+	if !conditions.IsTrue(machine, condition) {
+		return fmt.Errorf("machine %s reports %s condition is false: %w", machine.Name, condition, ErrPreConditionFailed)
 	}
 
 	return nil

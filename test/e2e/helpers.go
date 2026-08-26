@@ -425,19 +425,15 @@ func WaitForControlPlaneToBeReady(ctx context.Context, input WaitForControlPlane
 
 		desiredReplicas := controlplane.Spec.Replicas
 		statusReplicas := controlplane.Status.Replicas
-		updatedReplicas := controlplane.Status.UpdatedReplicas
-		readyReplicas := controlplane.Status.ReadyReplicas
-		unavailableReplicas := controlplane.Status.UnavailableReplicas
+		upToDateReplicas := *controlplane.Status.UpToDateReplicas
+		readyReplicas := *controlplane.Status.ReadyReplicas
 
 		// Control plane is still rolling out (and thus not ready) if:
-		// * .spec.replicas, .status.replicas, .status.updatedReplicas,
+		// * .spec.replicas, .status.replicas, .status.upToDateReplicas,
 		//   .status.readyReplicas are not equal and
 		// * unavailableReplicas > 0
-		By(fmt.Sprintf("Control plane %s: desired=%d, status=%d, updated=%d, ready=%d, unavailable=%d", klog.KObj(controlplane), *desiredReplicas, statusReplicas, updatedReplicas, readyReplicas, unavailableReplicas))
-		if statusReplicas != *desiredReplicas ||
-			updatedReplicas != *desiredReplicas ||
-			readyReplicas != *desiredReplicas ||
-			unavailableReplicas > 0 {
+		By(fmt.Sprintf("Control plane %s: desired=%d, status=%d, upToDate=%d, ready=%d", klog.KObj(controlplane), *desiredReplicas, statusReplicas, upToDateReplicas, readyReplicas))
+		if readyReplicas != *desiredReplicas {
 			return false, nil
 		}
 
