@@ -164,7 +164,8 @@ func (r *CK8sControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		logger.Info("Checking if to requeueing CK8sControlPlane")
 		if err == nil && !res.Requeue && res.RequeueAfter <= 0 && kcp.DeletionTimestamp.IsZero() {
 			logger.Info("Checking if to requeueing CK8sControlPlane for not ready status")
-			if kcp.Status.Initialization.ControlPlaneInitialized == nil || !*kcp.Status.Initialization.ControlPlaneInitialized {
+
+			if !conditions.IsTrue(cluster, clusterv1.ClusterControlPlaneAvailableCondition) {
 				logger.Info("Requeueing CK8sControlPlane for not ready status", "requeueAfter", 20*time.Second)
 				res = ctrl.Result{RequeueAfter: 20 * time.Second}
 			}
@@ -368,7 +369,6 @@ func (r *CK8sControlPlaneReconciler) updateStatus(ctx context.Context, kcp *cont
 		logger.Error(err, "failed to initialize control plane")
 		return err
 	}
-	kcp.Status.Initialization.ControlPlaneInitialized = pointer.Bool(true)
 	replicas := int32(len(ownedMachines))
 	desiredReplicas := *kcp.Spec.Replicas
 
