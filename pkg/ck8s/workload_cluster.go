@@ -648,19 +648,19 @@ func (w *Workload) UpdateAgentConditions(ctx context.Context, controlPlane *Cont
 					Type:    clusterv1.MachineAvailableCondition,
 					Status:  metav1.ConditionTrue,
 					Reason:  clusterv1.MachineAvailableReason,
-					Message: "Machine is available",
+					Message: "",
 				})
 				conditions.Set(machine, metav1.Condition{
 					Type:    clusterv1.MachineReadyCondition,
 					Status:  metav1.ConditionTrue,
 					Reason:  clusterv1.MachineReadyReason,
-					Message: "Machine is ready",
+					Message: "",
 				})
 				conditions.Set(machine, metav1.Condition{
 					Type:    clusterv1.MachineUpToDateCondition,
 					Status:  metav1.ConditionTrue,
 					Reason:  clusterv1.MachineUpToDateReason,
-					Message: "Machine is up to date",
+					Message: "",
 				})
 			}
 		}

@@ -170,7 +170,7 @@ spec:
       cluster.x-k8s.io/control-plane: ""
       mhc-test: fail
   checks:
-    nodeStartupTimeoutSeconds: 30
+    nodeStartupTimeoutSeconds: 120
     unhealthyNodeConditions:
       - status: "False"
         timeoutSeconds: 10
