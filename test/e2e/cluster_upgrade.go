@@ -184,6 +184,15 @@ func ClusterUpgradeSpec(ctx context.Context, inputGetter func() ClusterUpgradeSp
 			WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-cluster"),
 		}, result)
 
+		UpgradeControlPlaneAndWaitForUpgrade(ctx, UpgradeControlPlaneAndWaitForUpgradeInput{
+			ClusterProxy:                input.BootstrapClusterProxy,
+			Cluster:                     result.Cluster,
+			KubernetesUpgradeVersion:    e2eConfig.GetVariableOrEmpty(KubernetesVersionUpgradeTo),
+			MaxControlPlaneMachineCount: int64(controlPlaneMachineCount + 1),
+			WaitForMachinesToBeUpgraded: e2eConfig.GetIntervals(specName, "wait-control-plane-upgrade"),
+			ControlPlane:                result.ControlPlane,
+		})
+
 		By("Upgrading the machine deployment")
 		framework.UpgradeMachineDeploymentsAndWait(ctx, framework.UpgradeMachineDeploymentsAndWaitInput{
 			ClusterProxy:                input.BootstrapClusterProxy,
