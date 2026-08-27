@@ -164,32 +164,12 @@ func ClusterUpgradeSpec(ctx context.Context, inputGetter func() ClusterUpgradeSp
 			WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-cluster"),
 		}, result)
 
-		By("Upgrading the Kubernetes control-plane")
-		ApplyClusterTemplateAndWait(ctx, ApplyClusterTemplateAndWaitInput{
-			ClusterProxy: bootstrapClusterProxy,
-			ConfigCluster: clusterctl.ConfigClusterInput{
-				LogFolder:                clusterctlLogFolder,
-				ClusterctlConfigPath:     clusterctlConfigPath,
-				KubeconfigPath:           bootstrapClusterProxy.GetKubeconfigPath(),
-				InfrastructureProvider:   clusterctl.DefaultInfrastructureProvider,
-				Flavor:                   flavor,
-				Namespace:                namespace.Name,
-				ClusterName:              clusterName,
-				KubernetesVersion:        e2eConfig.GetVariableOrEmpty(KubernetesVersionUpgradeTo),
-				ControlPlaneMachineCount: &controlPlaneMachineCount,
-				WorkerMachineCount:       &workerMachineCount,
-			},
-			WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
-			WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
-			WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-cluster"),
-		}, result)
-
 		UpgradeControlPlaneAndWaitForUpgrade(ctx, UpgradeControlPlaneAndWaitForUpgradeInput{
 			ClusterProxy:                input.BootstrapClusterProxy,
 			Cluster:                     result.Cluster,
 			KubernetesUpgradeVersion:    e2eConfig.GetVariableOrEmpty(KubernetesVersionUpgradeTo),
 			MaxControlPlaneMachineCount: int64(controlPlaneMachineCount + 1),
-			WaitForMachinesToBeUpgraded: e2eConfig.GetIntervals(specName, "wait-control-plane-upgrade"),
+			WaitForMachinesToBeUpgraded: e2eConfig.GetIntervals(specName, "wait-control-plane-machines"),
 			ControlPlane:                result.ControlPlane,
 		})
 
