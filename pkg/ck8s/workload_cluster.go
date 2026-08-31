@@ -536,7 +536,7 @@ func (w *Workload) newHeaderWithNodeToken(nodeToken string) map[string][]string 
 // of problems in retrieving the pod status, it sets the condition to Unknown state without returning any error.
 func (w *Workload) UpdateAgentConditions(ctx context.Context, controlPlane *ControlPlane) {
 	allMachinePodConditions := []string{
-		controlplanev1.CK8sControlPlaneMachineAgentHealthyCondition,
+		string(controlplanev1.CK8sControlPlaneMachineAgentHealthyCondition),
 	}
 
 	// NOTE: this fun uses control plane nodes from the workload cluster as a source of truth for the current state.

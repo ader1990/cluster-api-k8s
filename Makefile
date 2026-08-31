@@ -381,7 +381,7 @@ help:  ## Display this help
 
 .PHONY: lint
 lint: $(GOLANGCI_LINT) ## Lint codebase
-	$(GOLANGCI_LINT) run -v -c .golangci.yml --fix
+	$(GOLANGCI_LINT) run -v -c .golangci.yml
 
 fmt:
 	go fmt ./...
