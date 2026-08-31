@@ -142,7 +142,7 @@ spec:
     matchLabels:
       e2e.remediation.label: ""
   checks:
-    nodeStartupTimeoutSeconds: 30
+    nodeStartupTimeoutSeconds: 120
     unhealthyNodeConditions:
       - status: "False"
         timeoutSeconds: 10

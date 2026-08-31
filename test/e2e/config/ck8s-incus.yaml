@@ -114,3 +114,4 @@ intervals:
   scale/wait-cluster: ["10m", "10s"]
   scale/wait-control-plane: ["20m", "10s"]
   scale/wait-worker-nodes: ["20m", "10s"]
+  workload-cluster-upgrade/wait-control-plane-machines: ["20m", "10s"]

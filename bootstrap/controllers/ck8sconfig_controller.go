@@ -23,12 +23,6 @@ import (
 	"strings"
 	"time"
 
-	bootstrapv1 "github.com/canonical/cluster-api-k8s/bootstrap/api/v1beta2"
-	"github.com/canonical/cluster-api-k8s/pkg/ck8s"
-	"github.com/canonical/cluster-api-k8s/pkg/cloudinit"
-	"github.com/canonical/cluster-api-k8s/pkg/locking"
-	"github.com/canonical/cluster-api-k8s/pkg/secret"
-	"github.com/canonical/cluster-api-k8s/pkg/token"
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -47,6 +41,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	kubeyaml "sigs.k8s.io/yaml"
+
+	bootstrapv1 "github.com/canonical/cluster-api-k8s/bootstrap/api/v1beta2"
+	"github.com/canonical/cluster-api-k8s/pkg/ck8s"
+	"github.com/canonical/cluster-api-k8s/pkg/cloudinit"
+	"github.com/canonical/cluster-api-k8s/pkg/locking"
+	"github.com/canonical/cluster-api-k8s/pkg/secret"
+	"github.com/canonical/cluster-api-k8s/pkg/token"
 )
 
 // InitLocker is a lock that is used around control plane init.
