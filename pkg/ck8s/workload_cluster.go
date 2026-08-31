@@ -536,7 +536,7 @@ func (w *Workload) newHeaderWithNodeToken(nodeToken string) map[string][]string 
 // of problems in retrieving the pod status, it sets the condition to Unknown state without returning any error.
 func (w *Workload) UpdateAgentConditions(ctx context.Context, controlPlane *ControlPlane) {
 	allMachinePodConditions := []string{
-		controlplanev1.CK8sControlPlaneMachineAgentHealthyCondition,
+		string(controlplanev1.CK8sControlPlaneMachineAgentHealthyCondition),
 	}
 
 	// NOTE: this fun uses control plane nodes from the workload cluster as a source of truth for the current state.
@@ -604,14 +604,12 @@ func (w *Workload) UpdateAgentConditions(ctx context.Context, controlPlane *Cont
 			// NOTE: We are assuming unreachable as a temporary condition, leaving to MHC
 			// the responsibility to determine if the node is unhealthy or not.
 			for _, condition := range allMachinePodConditions {
-
 				conditions.Set(machine, metav1.Condition{
 					Type:    string(condition),
 					Status:  metav1.ConditionFalse,
 					Reason:  string(controlplanev1.PodMissingReason),
 					Message: "Node is missing or unreachable, unable to inspect static pods",
 				})
-
 			}
 			continue
 		}

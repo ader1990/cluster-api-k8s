@@ -255,7 +255,6 @@ func (r *CK8sControlPlaneReconciler) reconcileDelete(ctx context.Context, cluste
 }
 
 func patchCK8sControlPlane(ctx context.Context, patchHelper *patch.Helper, kcp *controlplanev1.CK8sControlPlane) error {
-
 	// Patch the object, ignoring conflicts on the conditions owned by this controller.
 	return patchHelper.Patch(
 		ctx,
@@ -271,7 +270,6 @@ func patchCK8sControlPlane(ctx context.Context, patchHelper *patch.Helper, kcp *
 		}},
 		patch.WithStatusObservedGeneration{},
 	)
-
 }
 
 func (r *CK8sControlPlaneReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, log *logr.Logger) error {
@@ -630,7 +628,6 @@ func (r *CK8sControlPlaneReconciler) reconcile(ctx context.Context, cluster *clu
 				Reason:  "RollingUpdateCompleted",
 				Message: "Successfully rolled out all control plane machines",
 			})
-
 		}
 	}
 
