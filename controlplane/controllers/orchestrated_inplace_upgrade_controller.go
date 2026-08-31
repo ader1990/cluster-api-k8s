@@ -292,7 +292,7 @@ func (r *OrchestratedInPlaceUpgradeController) machinesAreReady(ck8sCP *controlp
 	if ck8sCP == nil || ck8sCP.Spec.Replicas == nil {
 		return false
 	}
-	return ck8sCP.Status.ReadyReplicas == ck8sCP.Spec.Replicas
+	return *ck8sCP.Status.ReadyReplicas == *ck8sCP.Spec.Replicas
 }
 
 // isDeleted returns true if the object is being deleted.

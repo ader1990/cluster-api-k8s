@@ -85,7 +85,8 @@ func ClusterUpgradeSpec(ctx context.Context, inputGetter func() ClusterUpgradeSp
 		clusterName         string
 		clusterctlLogFolder string
 
-		flavor string
+		flavor                      string
+		maxControlPlaneMachineCount int64
 	)
 
 	BeforeEach(func() {
@@ -115,7 +116,14 @@ func ClusterUpgradeSpec(ctx context.Context, inputGetter func() ClusterUpgradeSp
 
 		// Default flavor with the default MaxSurge=1 (we expect to see at most 1 extra Machine).
 		flavor = flavorUpgrades
-
+		maxControlPlaneMachineCount = controlPlaneMachineCount + 1
+		if input.Flavor != nil {
+			flavor = *input.Flavor
+			if flavor == flavorUpgradesMaxSurge0 {
+				// MaxSurge=0 (we should see no additional Machine).
+				maxControlPlaneMachineCount = controlPlaneMachineCount
+			}
+		}
 		// Setup a Namespace where to host objects for this spec and create a watcher for the namespace events.
 		namespace, cancelWatches = setupSpecNamespace(ctx, specName, input.BootstrapClusterProxy, input.ArtifactFolder)
 
@@ -168,7 +176,7 @@ func ClusterUpgradeSpec(ctx context.Context, inputGetter func() ClusterUpgradeSp
 			ClusterProxy:                input.BootstrapClusterProxy,
 			Cluster:                     result.Cluster,
 			KubernetesUpgradeVersion:    e2eConfig.GetVariableOrEmpty(KubernetesVersionUpgradeTo),
-			MaxControlPlaneMachineCount: int64(controlPlaneMachineCount + 1),
+			MaxControlPlaneMachineCount: maxControlPlaneMachineCount,
 			WaitForMachinesToBeUpgraded: e2eConfig.GetIntervals(specName, "wait-control-plane-machines"),
 			ControlPlane:                result.ControlPlane,
 		})
