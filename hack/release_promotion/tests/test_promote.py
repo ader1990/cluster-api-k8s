@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import datetime
 from unittest import mock
 
@@ -117,8 +119,8 @@ def test_get_tag_timestamp(mock_run):
 
 @mock.patch.object(promote, "get_tag_timestamp")
 def test_get_tag_age(mock_get_timestamp):
-    tag_timestamp = datetime.datetime(2025, 3, 10, 0, 0, 0, 0)
-    now = datetime.datetime(2025, 3, 11, 0, 0, 0, 0)
+    tag_timestamp = datetime.datetime(2025, 3, 10, 0, 0, 0, 0, tzinfo=datetime.UTC)
+    now = datetime.datetime(2025, 3, 11, 0, 0, 0, 0, tzinfo=datetime.UTC)
     exp_delta = datetime.timedelta(days=1)
 
     mock_get_timestamp.return_value = tag_timestamp

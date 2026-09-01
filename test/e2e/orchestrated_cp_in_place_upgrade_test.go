@@ -60,14 +60,15 @@ var _ = Describe("CK8sControlPlane Orchestrated In place upgrades", func() {
 
 	AfterEach(func() {
 		cleanInput := cleanupInput{
-			SpecName:        specName,
-			Cluster:         result.Cluster,
-			ClusterProxy:    bootstrapClusterProxy,
-			Namespace:       namespace,
-			CancelWatches:   cancelWatches,
-			IntervalsGetter: e2eConfig.GetIntervals,
-			SkipCleanup:     skipCleanup,
-			ArtifactFolder:  artifactFolder,
+			SpecName:             specName,
+			Cluster:              result.Cluster,
+			ClusterProxy:         bootstrapClusterProxy,
+			Namespace:            namespace,
+			CancelWatches:        cancelWatches,
+			IntervalsGetter:      e2eConfig.GetIntervals,
+			SkipCleanup:          skipCleanup,
+			ArtifactFolder:       artifactFolder,
+			ClusterctlConfigPath: clusterctlConfigPath,
 		}
 
 		dumpSpecResourcesAndCleanup(ctx, cleanInput)
@@ -85,7 +86,7 @@ var _ = Describe("CK8sControlPlane Orchestrated In place upgrades", func() {
 					InfrastructureProvider:   infrastructureProvider,
 					Namespace:                namespace.Name,
 					ClusterName:              clusterName,
-					KubernetesVersion:        e2eConfig.GetVariable(KubernetesVersion),
+					KubernetesVersion:        e2eConfig.GetVariableOrEmpty(KubernetesVersion),
 					ControlPlaneMachineCount: ptr.To(int64(3)),
 					WorkerMachineCount:       ptr.To(int64(1)),
 				},
@@ -103,7 +104,7 @@ var _ = Describe("CK8sControlPlane Orchestrated In place upgrades", func() {
 				ClusterProxy:            bootstrapClusterProxy,
 				Cluster:                 result.Cluster,
 				WaitForUpgradeIntervals: e2eConfig.GetIntervals(specName, "wait-machine-upgrade"),
-				UpgradeOption:           e2eConfig.GetVariable(InPlaceUpgradeOption),
+				UpgradeOption:           e2eConfig.GetVariableOrEmpty(InPlaceUpgradeOption),
 			})
 		})
 	})

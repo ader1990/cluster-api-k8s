@@ -63,14 +63,15 @@ var _ = Describe("In place upgrade", func() {
 
 	AfterEach(func() {
 		cleanInput := cleanupInput{
-			SpecName:        specName,
-			Cluster:         result.Cluster,
-			ClusterProxy:    bootstrapClusterProxy,
-			Namespace:       namespace,
-			CancelWatches:   cancelWatches,
-			IntervalsGetter: e2eConfig.GetIntervals,
-			SkipCleanup:     skipCleanup,
-			ArtifactFolder:  artifactFolder,
+			SpecName:             specName,
+			Cluster:              result.Cluster,
+			ClusterProxy:         bootstrapClusterProxy,
+			Namespace:            namespace,
+			CancelWatches:        cancelWatches,
+			IntervalsGetter:      e2eConfig.GetIntervals,
+			SkipCleanup:          skipCleanup,
+			ArtifactFolder:       artifactFolder,
+			ClusterctlConfigPath: clusterctlConfigPath,
 		}
 
 		dumpSpecResourcesAndCleanup(ctx, cleanInput)
@@ -88,7 +89,7 @@ var _ = Describe("In place upgrade", func() {
 					InfrastructureProvider:   infrastructureProvider,
 					Namespace:                namespace.Name,
 					ClusterName:              clusterName,
-					KubernetesVersion:        e2eConfig.GetVariable(KubernetesVersion),
+					KubernetesVersion:        e2eConfig.MustGetVariable(KubernetesVersion),
 					ControlPlaneMachineCount: ptr.To(int64(1)),
 					WorkerMachineCount:       ptr.To(int64(1)),
 				},
@@ -105,7 +106,7 @@ var _ = Describe("In place upgrade", func() {
 				Getter:                  bootstrapProxyClient,
 				ClusterProxy:            bootstrapClusterProxy,
 				Cluster:                 result.Cluster,
-				UpgradeOption:           e2eConfig.GetVariable(InPlaceUpgradeOption),
+				UpgradeOption:           e2eConfig.MustGetVariable(InPlaceUpgradeOption),
 				WaitForUpgradeIntervals: e2eConfig.GetIntervals(specName, "wait-machine-upgrade"),
 			})
 
@@ -116,7 +117,7 @@ var _ = Describe("In place upgrade", func() {
 				ClusterProxy:            bootstrapClusterProxy,
 				Cluster:                 result.Cluster,
 				WaitForUpgradeIntervals: e2eConfig.GetIntervals(specName, "wait-machine-upgrade"),
-				UpgradeOption:           e2eConfig.GetVariable(InPlaceUpgradeOption),
+				UpgradeOption:           e2eConfig.MustGetVariable(InPlaceUpgradeOption),
 				MachineDeployments:      result.MachineDeployments,
 			})
 		})
