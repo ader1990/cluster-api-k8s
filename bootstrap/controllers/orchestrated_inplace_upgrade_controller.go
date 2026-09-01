@@ -18,7 +18,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	bootstrapv1 "github.com/canonical/cluster-api-k8s/bootstrap/api/v1beta2"
+	bootstrapv1 "github.com/canonical/cluster-api-k8s/bootstrap/api/v1beta3"
 	"github.com/canonical/cluster-api-k8s/pkg/ck8s"
 	"github.com/canonical/cluster-api-k8s/pkg/trace"
 	"github.com/canonical/cluster-api-k8s/pkg/upgrade/inplace"
