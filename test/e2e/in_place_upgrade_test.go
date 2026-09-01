@@ -89,7 +89,7 @@ var _ = Describe("In place upgrade", func() {
 					InfrastructureProvider:   infrastructureProvider,
 					Namespace:                namespace.Name,
 					ClusterName:              clusterName,
-					KubernetesVersion:        e2eConfig.GetVariableOrEmpty(KubernetesVersion),
+					KubernetesVersion:        e2eConfig.MustGetVariable(KubernetesVersion),
 					ControlPlaneMachineCount: ptr.To(int64(1)),
 					WorkerMachineCount:       ptr.To(int64(1)),
 				},
@@ -106,7 +106,7 @@ var _ = Describe("In place upgrade", func() {
 				Getter:                  bootstrapProxyClient,
 				ClusterProxy:            bootstrapClusterProxy,
 				Cluster:                 result.Cluster,
-				UpgradeOption:           e2eConfig.GetVariableOrEmpty(InPlaceUpgradeOption),
+				UpgradeOption:           e2eConfig.MustGetVariable(InPlaceUpgradeOption),
 				WaitForUpgradeIntervals: e2eConfig.GetIntervals(specName, "wait-machine-upgrade"),
 			})
 
@@ -117,7 +117,7 @@ var _ = Describe("In place upgrade", func() {
 				ClusterProxy:            bootstrapClusterProxy,
 				Cluster:                 result.Cluster,
 				WaitForUpgradeIntervals: e2eConfig.GetIntervals(specName, "wait-machine-upgrade"),
-				UpgradeOption:           e2eConfig.GetVariableOrEmpty(InPlaceUpgradeOption),
+				UpgradeOption:           e2eConfig.MustGetVariable(InPlaceUpgradeOption),
 				MachineDeployments:      result.MachineDeployments,
 			})
 		})
