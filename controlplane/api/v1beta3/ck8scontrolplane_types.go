@@ -24,7 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 
-	bootstrapv1 "github.com/canonical/cluster-api-k8s/bootstrap/api/v1beta2"
+	bootstrapv1 "github.com/canonical/cluster-api-k8s/bootstrap/api/v1beta3"
 	"github.com/canonical/cluster-api-k8s/pkg/errors"
 )
 

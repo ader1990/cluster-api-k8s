@@ -47,7 +47,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	controlplanev1 "github.com/canonical/cluster-api-k8s/controlplane/api/v1beta2"
+	controlplanev1 "github.com/canonical/cluster-api-k8s/controlplane/api/v1beta3"
 	"github.com/canonical/cluster-api-k8s/pkg/ck8s"
 	"github.com/canonical/cluster-api-k8s/pkg/kubeconfig"
 	"github.com/canonical/cluster-api-k8s/pkg/secret"

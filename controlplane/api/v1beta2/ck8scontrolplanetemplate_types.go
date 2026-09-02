@@ -19,7 +19,7 @@ package v1beta2
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	bootstrapv1beta2 "github.com/canonical/cluster-api-k8s/bootstrap/api/v1beta2"
+	bootstrapv1beta2 "github.com/canonical/cluster-api-k8s/bootstrap/api/v1beta3"
 )
 
 // CK8sControlPlaneTemplateSpec defines the desired state of CK8sControlPlaneTemplateSpec.

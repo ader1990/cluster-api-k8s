@@ -33,8 +33,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
-	bootstrapv1 "github.com/canonical/cluster-api-k8s/bootstrap/api/v1beta2"
-	controlplanev1 "github.com/canonical/cluster-api-k8s/controlplane/api/v1beta2"
+	bootstrapv1 "github.com/canonical/cluster-api-k8s/bootstrap/api/v1beta3"
+	controlplanev1 "github.com/canonical/cluster-api-k8s/controlplane/api/v1beta3"
 	"github.com/canonical/cluster-api-k8s/controlplane/controllers"
 )
 
