@@ -50,12 +50,12 @@ webhooks:
   sideEffects: None
 - admissionReviewVersions:
   - v1
-  - v1beta1
+  - v1beta3
   clientConfig:
     service:
       name: webhook-service
       namespace: system
-      path: /mutate-bootstrap-cluster-x-k8s-io-v1beta2-ck8sconfigtemplate
+      path: /mutate-bootstrap-cluster-x-k8s-io-v1beta3-ck8sconfigtemplate
   failurePolicy: Fail
   matchPolicy: Equivalent
   name: default.ck8sconfigtemplate.bootstrap.cluster.x-k8s.io
@@ -63,7 +63,7 @@ webhooks:
   - apiGroups:
     - bootstrap.cluster.x-k8s.io
     apiVersions:
-    - v1beta2
+    - v1beta3
     operations:
     - CREATE
     - UPDATE
@@ -144,12 +144,12 @@ webhooks:
   sideEffects: None
 - admissionReviewVersions:
   - v1
-  - v1beta1
+  - v1beta3
   clientConfig:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-bootstrap-cluster-x-k8s-io-v1beta2-ck8sconfigtemplate
+      path: /validate-bootstrap-cluster-x-k8s-io-v1beta3-ck8sconfigtemplate
   failurePolicy: Fail
   matchPolicy: Equivalent
   name: validation.ck8sconfigtemplate.bootstrap.cluster.x-k8s.io
@@ -157,7 +157,7 @@ webhooks:
   - apiGroups:
     - bootstrap.cluster.x-k8s.io
     apiVersions:
-    - v1beta2
+    - v1beta3
     operations:
     - CREATE
     - UPDATE
