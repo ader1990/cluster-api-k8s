@@ -19,7 +19,7 @@ package v1beta3
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	bootstrapv1beta2 "github.com/canonical/cluster-api-k8s/bootstrap/api/v1beta3"
+	bootstrapv1beta3 "github.com/canonical/cluster-api-k8s/bootstrap/api/v1beta3"
 )
 
 // CK8sControlPlaneTemplateSpec defines the desired state of CK8sControlPlaneTemplateSpec.
@@ -39,7 +39,7 @@ type CK8sControlPlaneTemplateResourceSpec struct {
 	// CK8sConfigSpec is a CK8sConfigSpec
 	// to use for initializing and joining machines to the control plane.
 	// +optional
-	CK8sConfigSpec bootstrapv1beta2.CK8sConfigSpec `json:"spec,omitempty"`
+	CK8sConfigSpec bootstrapv1beta3.CK8sConfigSpec `json:"spec,omitempty"`
 
 	// RolloutAfter is a field to indicate an rollout should be performed
 	// after the specified time even if no changes have been made to the
