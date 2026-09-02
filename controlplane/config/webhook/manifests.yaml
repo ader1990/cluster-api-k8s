@@ -6,29 +6,7 @@ metadata:
 webhooks:
 - admissionReviewVersions:
   - v1
-  - v1beta3
-  clientConfig:
-    service:
-      name: webhook-service
-      namespace: system
-      path: /mutate-controlplane-cluster-x-k8s-io-v1beta3-ck8scontrolplane
-  failurePolicy: Fail
-  matchPolicy: Equivalent
-  name: default.ck8scontrolplane.controlplane.cluster.x-k8s.io
-  rules:
-  - apiGroups:
-    - controlplane.cluster.x-k8s.io
-    apiVersions:
-    - v1beta3
-    operations:
-    - CREATE
-    - UPDATE
-    resources:
-    - ck8scontrolplanes
-  sideEffects: None
-- admissionReviewVersions:
-  - v1
-  - v1beta2
+  - v1beta1
   clientConfig:
     service:
       name: webhook-service
@@ -48,6 +26,28 @@ webhooks:
     resources:
     - ck8scontrolplanes
   sideEffects: None
+- admissionReviewVersions:
+  - v1
+  - v1beta1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /mutate-controlplane-cluster-x-k8s-io-v1beta3-ck8scontrolplane
+  failurePolicy: Fail
+  matchPolicy: Equivalent
+  name: default.ck8scontrolplane.controlplane.cluster.x-k8s.io
+  rules:
+  - apiGroups:
+    - controlplane.cluster.x-k8s.io
+    apiVersions:
+    - v1beta3
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - ck8scontrolplanes
+  sideEffects: None
 ---
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
@@ -56,7 +56,7 @@ metadata:
 webhooks:
 - admissionReviewVersions:
   - v1
-  - v1beta3
+  - v1beta1
   clientConfig:
     service:
       name: webhook-service
@@ -78,7 +78,7 @@ webhooks:
   sideEffects: None
 - admissionReviewVersions:
   - v1
-  - v1beta2
+  - v1beta1
   clientConfig:
     service:
       name: webhook-service
