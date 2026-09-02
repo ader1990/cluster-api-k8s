@@ -31,7 +31,7 @@ spec:
         flavor: ${LOAD_BALANCER_MACHINE_FLAVOR:=""}
         profiles: ${LOAD_BALANCER_MACHINE_PROFILES:=[default]}
 ---
-apiVersion: controlplane.cluster.x-k8s.io/v1beta2
+apiVersion: controlplane.cluster.x-k8s.io/v1beta3
 kind: CK8sControlPlane
 metadata:
   name: ${CLUSTER_NAME}-control-plane
@@ -115,7 +115,7 @@ spec:
       image:
         name: ${LXC_IMAGE_NAME}
 ---
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta3
 kind: CK8sConfigTemplate
 metadata:
   name: ${CLUSTER_NAME}-md-0

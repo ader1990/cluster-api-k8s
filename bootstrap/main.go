@@ -34,7 +34,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
-	bootstrapv1 "github.com/canonical/cluster-api-k8s/bootstrap/api/v1beta2"
+	bootstrapv1beta2 "github.com/canonical/cluster-api-k8s/bootstrap/api/v1beta2"
+	bootstrapv1 "github.com/canonical/cluster-api-k8s/bootstrap/api/v1beta3"
 	"github.com/canonical/cluster-api-k8s/bootstrap/controllers"
 )
 
@@ -47,6 +48,7 @@ func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
 	_ = clusterv1beta1.AddToScheme(scheme)
 	_ = expv1beta1.AddToScheme(scheme)
+	_ = bootstrapv1beta2.AddToScheme(scheme)
 	_ = bootstrapv1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 }
@@ -135,6 +137,15 @@ func main() {
 	}
 
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
+		if err = (&bootstrapv1beta2.CK8sConfig{}).SetupWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "CK8sConfig v1beta2")
+			os.Exit(1)
+		}
+		if err = (&bootstrapv1beta2.CK8sConfigTemplate{}).SetupWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "CK8sConfigTemplate v1beta2")
+			os.Exit(1)
+		}
+
 		if err = (&bootstrapv1.CK8sConfig{}).SetupWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "CK8sConfig")
 			os.Exit(1)
