@@ -11,7 +11,7 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /mutate-bootstrap-cluster-x-k8s-io-v1beta2-ck8sconfig
+      path: /mutate-bootstrap-cluster-x-k8s-io-v1beta3-ck8sconfig
   failurePolicy: Fail
   matchPolicy: Equivalent
   name: default.ck8sconfig.bootstrap.cluster.x-k8s.io
@@ -19,7 +19,7 @@ webhooks:
   - apiGroups:
     - bootstrap.cluster.x-k8s.io
     apiVersions:
-    - v1beta2
+    - v1beta3
     operations:
     - CREATE
     - UPDATE
@@ -105,7 +105,7 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-bootstrap-cluster-x-k8s-io-v1beta2-ck8sconfig
+      path: /validate-bootstrap-cluster-x-k8s-io-v1beta3-ck8sconfig
   failurePolicy: Fail
   matchPolicy: Equivalent
   name: validation.ck8sconfig.bootstrap.cluster.x-k8s.io
@@ -113,7 +113,7 @@ webhooks:
   - apiGroups:
     - bootstrap.cluster.x-k8s.io
     apiVersions:
-    - v1beta2
+    - v1beta3
     operations:
     - CREATE
     - UPDATE
