@@ -64,7 +64,6 @@ type CK8sControlPlaneTemplateResourceSpec struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-// +kubebuilder:storageversion
 
 // CK8sControlPlaneTemplate is the Schema for the ck8scontrolplanetemplate API.
 type CK8sControlPlaneTemplate struct {

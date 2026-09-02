@@ -266,7 +266,6 @@ type LastRemediationStatus struct {
 }
 
 // +kubebuilder:object:root=true
-// +kubebuilder:storageversion
 // +kubebuilder:subresource:status
 // +kubebuilder:subresource:scale:specpath=.spec.replicas,statuspath=.status.replicas,selectorpath=.status.selector
 // +kubebuilder:printcolumn:name="Initialized",type=boolean,JSONPath=".status.initialized",description="This denotes whether or not the control plane has completed the initialization"
