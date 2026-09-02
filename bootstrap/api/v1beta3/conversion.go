@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1beta2
+package v1beta3
 
 // Hub marks CK8sConfig as a conversion hub.
 func (*CK8sConfig) Hub() {}

@@ -1,4 +1,4 @@
-package v1beta2
+package v1beta3
 
 const (
 	CertificatesRefreshAnnotation       = "v1beta2.k8sd.io/refresh-certificates"

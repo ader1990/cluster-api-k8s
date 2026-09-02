@@ -1,4 +1,4 @@
-package v1beta2
+package v1beta3
 
 const (
 	InPlaceUpgradeToAnnotation                  = "v1beta2.k8sd.io/in-place-upgrade-to"

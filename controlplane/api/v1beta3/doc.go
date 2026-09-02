@@ -18,4 +18,4 @@ limitations under the License.
 // +kubebuilder:object:generate=true
 // +groupName=controlplane.cluster.x-k8s.io
 // +k8s:defaulter-gen=TypeMeta
-package v1beta2
+package v1beta3
