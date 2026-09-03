@@ -546,7 +546,7 @@ func (w *Workload) UpdateAgentConditions(ctx context.Context, controlPlane *Cont
 			machine := controlPlane.Machines[i]
 			for _, condition := range allMachinePodConditions {
 				conditions.Set(machine, metav1.Condition{
-					Type:    string(condition),
+					Type:    condition,
 					Status:  metav1.ConditionUnknown,
 					Reason:  string(controlplanev1.PodInspectionFailedReason),
 					Message: "Failed to get the node which is hosting this component",
@@ -590,7 +590,7 @@ func (w *Workload) UpdateAgentConditions(ctx context.Context, controlPlane *Cont
 		if !machine.DeletionTimestamp.IsZero() {
 			for _, condition := range allMachinePodConditions {
 				conditions.Set(machine, metav1.Condition{
-					Type:    string(condition),
+					Type:    condition,
 					Status:  metav1.ConditionFalse,
 					Reason:  string(clusterv1.DeletingReason),
 					Message: "Machine is being deleted",
@@ -605,7 +605,7 @@ func (w *Workload) UpdateAgentConditions(ctx context.Context, controlPlane *Cont
 			// the responsibility to determine if the node is unhealthy or not.
 			for _, condition := range allMachinePodConditions {
 				conditions.Set(machine, metav1.Condition{
-					Type:    string(condition),
+					Type:    condition,
 					Status:  metav1.ConditionFalse,
 					Reason:  string(controlplanev1.PodMissingReason),
 					Message: "Node is missing or unreachable, unable to inspect static pods",
@@ -680,7 +680,7 @@ func (w *Workload) UpdateAgentConditions(ctx context.Context, controlPlane *Cont
 		if !found {
 			for _, condition := range allMachinePodConditions {
 				conditions.Set(machine, metav1.Condition{
-					Type:    string(condition),
+					Type:    condition,
 					Status:  metav1.ConditionFalse,
 					Reason:  string(controlplanev1.PodFailedReason),
 					Message: "Node is missing",
@@ -726,7 +726,7 @@ func aggregateFromMachinesToKCP(input aggregateFromMachinesToKCPInput) {
 	for i := range input.controlPlane.Machines {
 		machine := input.controlPlane.Machines[i]
 		for _, condition := range input.machineConditions {
-			if machineCondition := conditions.Get(machine, string(condition)); machineCondition != nil {
+			if machineCondition := conditions.Get(machine, condition); machineCondition != nil {
 				switch machineCondition.Status {
 				case metav1.ConditionTrue:
 					kcpMachinesWithTrue.Insert(machine.Name)
@@ -751,7 +751,7 @@ func aggregateFromMachinesToKCP(input aggregateFromMachinesToKCPInput) {
 	}
 	if len(input.kcpErrors) > 0 {
 		conditions.Set(input.controlPlane.KCP, metav1.Condition{
-			Type:    string(input.condition),
+			Type:    input.condition,
 			Status:  metav1.ConditionFalse,
 			Reason:  controlplanev1.GroupVersion.Version,
 			Message: strings.Join(input.kcpErrors, "; "),
@@ -762,7 +762,7 @@ func aggregateFromMachinesToKCP(input aggregateFromMachinesToKCPInput) {
 	// In case of no errors and at least one machine with warnings, report false, warnings.
 	if len(kcpMachinesWithWarnings) > 0 {
 		conditions.Set(input.controlPlane.KCP, metav1.Condition{
-			Type:    string(input.condition),
+			Type:    input.condition,
 			Status:  metav1.ConditionFalse,
 			Reason:  controlplanev1.GroupVersion.Version,
 			Message: fmt.Sprintf("Following machines are reporting warnings: %s", strings.Join(kcpMachinesWithWarnings.List(), ", ")),
@@ -773,7 +773,7 @@ func aggregateFromMachinesToKCP(input aggregateFromMachinesToKCPInput) {
 	// In case of no errors, no warning, and at least one machine with info, report false, info.
 	if len(kcpMachinesWithInfo) > 0 {
 		conditions.Set(input.controlPlane.KCP, metav1.Condition{
-			Type:    string(input.condition),
+			Type:    input.condition,
 			Status:  metav1.ConditionTrue,
 			Reason:  controlplanev1.GroupVersion.Version,
 			Message: fmt.Sprintf("Following machines are reporting info: %s", strings.Join(kcpMachinesWithInfo.List(), ", ")),
@@ -784,7 +784,7 @@ func aggregateFromMachinesToKCP(input aggregateFromMachinesToKCPInput) {
 	// In case of no errors, no warning, no Info, and at least one machine with true conditions, report true.
 	if len(kcpMachinesWithTrue) > 0 {
 		conditions.Set(input.controlPlane.KCP, metav1.Condition{
-			Type:    string(input.condition),
+			Type:    input.condition,
 			Status:  metav1.ConditionTrue,
 			Reason:  controlplanev1.GroupVersion.Version,
 			Message: fmt.Sprintf("Following machines are reporting true: %s", strings.Join(kcpMachinesWithTrue.List(), ", ")),
@@ -795,7 +795,7 @@ func aggregateFromMachinesToKCP(input aggregateFromMachinesToKCPInput) {
 	// Otherwise, if there is at least one machine with unknown, report unknown.
 	if len(kcpMachinesWithUnknown) > 0 {
 		conditions.Set(input.controlPlane.KCP, metav1.Condition{
-			Type:    string(input.condition),
+			Type:    input.condition,
 			Status:  metav1.ConditionUnknown,
 			Reason:  controlplanev1.GroupVersion.Version,
 			Message: fmt.Sprintf("Following machines are reporting unknown %s status: %s", input.note, strings.Join(kcpMachinesWithUnknown.List(), ", ")),

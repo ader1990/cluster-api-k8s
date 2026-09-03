@@ -31,7 +31,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/utils/pointer"
 	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/controllers/external"
@@ -130,7 +129,7 @@ func (r *CK8sControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		// patch and return right away instead of reusing the main defer,
 		// because the main defer may take too much time to get cluster status
 		// Patch ObservedGeneration only if the reconciliation completed successfully
-		patchOpts := []patch.Option{}
+		patchOpts := make([]patch.Option, 0, 1)
 		patchOpts = append(patchOpts, patch.WithStatusObservedGeneration{})
 		if err := patchHelper.Patch(ctx, kcp, patchOpts...); err != nil {
 			logger.Error(err, "Failed to patch CK8sControlPlane to add finalizer")
@@ -436,7 +435,7 @@ func (r *CK8sControlPlaneReconciler) updateStatus(ctx context.Context, kcp *cont
 	// is installed, so we fall back to API-server accessibility (ClusterStatus succeeded + replicas
 	// exist) to break the initialization deadlock and allow the MAAS controller to proceed.
 	if status.HasK8sdConfigMap || (!enableDefaultNetwork && replicas > 0) {
-		kcp.Status.Initialization.ControlPlaneInitialized = pointer.Bool(true)
+		kcp.Status.Initialization.ControlPlaneInitialized = ptr.To(true)
 	}
 
 	// When default network is disabled, nodes remain NotReady until the external CNI is
