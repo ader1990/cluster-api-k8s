@@ -99,8 +99,10 @@ func GenerateInitControlPlaneConfig(cfg InitControlPlaneConfig) (apiv1.Bootstrap
 	if out.ClusterConfig.Annotations == nil {
 		out.ClusterConfig.Annotations = map[string]string{}
 	}
-
 	trueStr := "true"
+	if _, ok := out.ClusterConfig.Annotations[apiv1_annotations.AnnotationSkipStopServicesOnRemove]; !ok {
+		out.ClusterConfig.Annotations[apiv1_annotations.AnnotationSkipStopServicesOnRemove] = trueStr
+	}
 	if _, ok := out.ClusterConfig.Annotations[apiv1_annotations.AnnotationSkipCleanupKubernetesNodeOnRemove]; !ok {
 		out.ClusterConfig.Annotations[apiv1_annotations.AnnotationSkipCleanupKubernetesNodeOnRemove] = trueStr
 	}
