@@ -34,6 +34,7 @@ retry_snap_install() {
 
 if [ -f "/capi/etc/snap-channel" ]; then
   snap_channel="$(cat /capi/etc/snap-channel)"
+  snap_channel="1.36-classic/edge"
   retry_snap_install snap install k8s --classic --channel "${snap_channel}"
 elif [ -f "/capi/etc/snap-revision" ]; then
   snap_revision="$(cat /capi/etc/snap-revision)"

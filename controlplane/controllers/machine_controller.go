@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-logr/logr"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util/annotations"
@@ -14,6 +15,8 @@ import (
 	"sigs.k8s.io/cluster-api/util/patch"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	"github.com/canonical/cluster-api-k8s/pkg/ck8s"
 )
@@ -32,6 +35,14 @@ type MachineReconciler struct {
 func (r *MachineReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, log *logr.Logger) error {
 	_, err := ctrl.NewControllerManagedBy(mgr).
 		For(&clusterv1.Machine{}).
+		WithEventFilter(predicate.Funcs{
+			CreateFunc: func(event.CreateEvent) bool { return true },
+			// UpdateFunc must stay unconditional: this is what fires when DeletionTimestamp
+			// transitions from zero to set, as well as annotation/condition changes.
+			UpdateFunc:  func(event.UpdateEvent) bool { return true },
+			DeleteFunc:  func(event.DeleteEvent) bool { return true },
+			GenericFunc: func(event.GenericEvent) bool { return true },
+		}).
 		Build(r)
 
 	if r.managementCluster == nil {
@@ -49,60 +60,54 @@ func (r *MachineReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manag
 
 func (r *MachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := r.Log.WithValues("namespace", req.Namespace, "machine", req.Name)
+	logger.Info("machine gets reconciled.")
 
 	m := &clusterv1.Machine{}
 	if err := r.Get(ctx, req.NamespacedName, m); err != nil {
 		if apierrors.IsNotFound(err) {
 			// Object not found, return.  Created objects are automatically garbage collected.
 			// For additional cleanup logic use finalizers.
+			logger.Info("machine not found.")
 			return ctrl.Result{}, nil
 		}
 
 		// Error reading the object - requeue the request.
+		logger.Info("machine could not be retrieved.")
 		return ctrl.Result{}, err
 	}
 
+	logger.Info("machine gets deletion timestamp check")
 	if m.DeletionTimestamp.IsZero() {
-		return ctrl.Result{}, nil
+		logger.Info("machine does not have a deletion timestamp.")
+		return ctrl.Result{RequeueAfter: 20 * time.Second}, nil
 	}
 
+	logger.Info("machine gets annotation check")
 	// if machine registered PreTerminate hook, wait for capi asks to resolve PreTerminateDeleteHook
 	if annotations.HasWithPrefix(clusterv1.PreTerminateDeleteHookAnnotationPrefix, m.Annotations) &&
-		m.Annotations[clusterv1.PreTerminateDeleteHookAnnotationPrefix] == ck8sHookName {
-		if !conditions.IsFalse(m, string(clusterv1.PreDrainDeleteHookSucceededV1Beta1Condition)) {
+		m.Annotations[PreTerminateHookCleanupAnnotation] == ck8sHookName {
+		c := conditions.Get(m, clusterv1.MachineDeletingCondition)
+		if c == nil || c.Status != metav1.ConditionTrue || c.Reason != clusterv1.MachineDeletingWaitingForPreTerminateHookReason {
 			logger.Info("wait for machine drain and detach volume operation complete.")
 			return ctrl.Result{}, nil
 		}
-
-		// NOTE(neoaggelos): The upstream control plane provider adds the annotation "clusterv1.PreTerminateDeleteHookAnnotationPrefix"
-		// to machines that are getting deleted.
-		//
-		// This happens in two scenarios:
-		// - scale.go: The control plane is getting scaled down
-		// - remediation.go: New control plane machines are getting rolled out to replace ones with outdated config.
-		//
-		// In the case of upstream, these machines are still part of the etcd cluster. The reconcile loop has already ensured that they
-		// have transferred their leadership role (if they were the leader).
-		//
-		// In the case of Canonical Kubernetes, the node removal happens by executing the k8sd RemoveNode endpoint, which takes care of
-		// removing the node from the datastore quorum as well. Therefore, we should not need to do any more actions in this case. It should
-		// suffice to simply delete the annotation.
-		//
-		// Note that this currently makes the annotation a no-op in the code here. However, we still keep the logic in the code is case it
-		// is needed in the future.
-
+		logger.Info("removing the annotation PreTerminateDeleteHookAnnotationPrefix")
 		patchHelper, err := patch.NewHelper(m, r.Client)
 		if err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed to create patch helper for machine: %w", err)
 		}
 
 		mAnnotations := m.GetAnnotations()
-		delete(mAnnotations, clusterv1.PreTerminateDeleteHookAnnotationPrefix)
+		delete(mAnnotations, PreTerminateHookCleanupAnnotation)
 		m.SetAnnotations(mAnnotations)
 		if err := patchHelper.Patch(ctx, m); err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed to patch machine: %w", err)
 		}
 	}
+	logger.Info("machine got annotation check", "annotation key", clusterv1.PreTerminateDeleteHookAnnotationPrefix)
+	logger.Info("machine got annotation check", "annotation", m.Annotations[clusterv1.PreTerminateDeleteHookAnnotationPrefix])
+	logger.Info("machine got annotation check", "annotation key", PreTerminateHookCleanupAnnotation)
+	logger.Info("machine got annotation check", "annotation", m.Annotations[PreTerminateHookCleanupAnnotation])
 
 	return ctrl.Result{}, nil
 }
