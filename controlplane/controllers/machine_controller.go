@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -96,8 +97,16 @@ func (r *MachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	// if machine registered PreTerminate hook, wait for capi asks to resolve PreTerminateDeleteHook
 	if annotations.HasWithPrefix(clusterv1.PreTerminateDeleteHookAnnotationPrefix, m.Annotations) &&
 		m.Annotations[PreTerminateHookCleanupAnnotation] == ck8sHookName {
+		if m.Status.NodeRef.Name != "" {
+			node := &corev1.Node{}
+			if err := r.Get(ctx, client.ObjectKey{Name: m.Status.NodeRef.Name}, node); err == nil {
+				if len(node.Status.VolumesAttached) == 0 {
+					logger.Info("wait for machine drain and detach volume operation complete.")
+				}
+			}
+		}
 		c := conditions.Get(m, clusterv1.MachineDeletingCondition)
-		if c == nil || c.Status != metav1.ConditionTrue || c.Reason != clusterv1.MachineDeletingWaitingForPreTerminateHookReason || m.Status.Deletion.NodeDrainFinishedTime.IsZero() {
+		if c == nil || c.Status != metav1.ConditionTrue || c.Reason != clusterv1.MachineDeletingWaitingForPreTerminateHookReason || m.Status.Deletion.WaitForNodeVolumeDetachStartTime.IsZero() {
 			logger.Info("wait for machine drain and detach volume operation complete.")
 			return ctrl.Result{}, nil
 		}
