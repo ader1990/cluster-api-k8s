@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	pkgerrors "github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -77,6 +76,14 @@ func (r *MachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		logger.Info("machine could not be retrieved.")
 		return ctrl.Result{}, err
 	}
+	cluster := &clusterv1.Cluster{}
+	errCluster := r.Get(ctx, client.ObjectKey{
+		Namespace: m.Namespace,
+		Name:      m.Labels["cluster.x-k8s.io/cluster-name"],
+	}, cluster)
+	if errCluster != nil {
+		return ctrl.Result{}, errCluster
+	}
 
 	logger.Info("machine gets deletion timestamp check")
 	if m.DeletionTimestamp.IsZero() {
@@ -92,20 +99,6 @@ func (r *MachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		if c == nil || c.Status != metav1.ConditionTrue || c.Reason != clusterv1.MachineDeletingWaitingForPreTerminateHookReason {
 			logger.Info("wait for machine drain and detach volume operation complete.")
 			return ctrl.Result{}, nil
-		}
-		// Fetch the Cluster.
-		cluster, err := util.GetOwnerCluster(ctx, r.Client, m.ObjectMeta)
-		if err != nil {
-			// It should be an issue to be investigated if the controller get the NotFound status.
-			// So, it should return the error.
-			return ctrl.Result{}, pkgerrors.Wrapf(err, "failed to retrieve owner Cluster")
-		}
-		if cluster == nil {
-			logger.Info("Cluster Controller has not yet set OwnerRef", "cluster", m.Labels["cluster.x-k8s.io/cluster-name"])
-			cluster = &clusterv1.Cluster{}
-			if err = r.Get(ctx, req.NamespacedName, cluster); err != nil {
-				return ctrl.Result{}, err
-			}
 		}
 
 		microclusterPort := 2380
