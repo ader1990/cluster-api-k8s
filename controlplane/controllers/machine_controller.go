@@ -6,10 +6,12 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
+	pkgerrors "github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
@@ -18,6 +20,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
+	controlplanev1 "github.com/canonical/cluster-api-k8s/controlplane/api/v1beta3"
 	"github.com/canonical/cluster-api-k8s/pkg/ck8s"
 )
 
@@ -90,6 +93,39 @@ func (r *MachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		if c == nil || c.Status != metav1.ConditionTrue || c.Reason != clusterv1.MachineDeletingWaitingForPreTerminateHookReason {
 			logger.Info("wait for machine drain and detach volume operation complete.")
 			return ctrl.Result{}, nil
+		}
+		// Fetch the CK8sControlPlane instance.
+		kcp := &controlplanev1.CK8sControlPlane{}
+		if err := r.Get(ctx, req.NamespacedName, kcp); err != nil {
+			if apierrors.IsNotFound(err) {
+				logger.Error(err, "Failed to retrieve CK8sControlPlane: Not Found")
+				return ctrl.Result{}, nil
+			}
+			logger.Error(err, "Failed to retrieve CK8sControlPlane")
+			return ctrl.Result{}, err
+		}
+		// Fetch the Cluster.
+		cluster, err := util.GetOwnerCluster(ctx, r.Client, kcp.ObjectMeta)
+		if err != nil {
+			// It should be an issue to be investigated if the controller get the NotFound status.
+			// So, it should return the error.
+			return ctrl.Result{}, pkgerrors.Wrapf(err, "failed to retrieve owner Cluster")
+		}
+		if cluster == nil {
+			logger.Info("Cluster Controller has not yet set OwnerRef")
+			return ctrl.Result{}, nil
+		}
+
+		microclusterPort := kcp.Spec.CK8sConfigSpec.ControlPlaneConfig.GetMicroclusterPort()
+		clusterObjectKey := util.ObjectKey(cluster)
+		workloadCluster, err := r.managementCluster.GetWorkloadCluster(ctx, clusterObjectKey, microclusterPort)
+		if err != nil {
+			logger.Error(err, "failed to create client to workload cluster")
+			return ctrl.Result{}, fmt.Errorf("failed to create client to workload cluster: %w", err)
+		}
+		if err := workloadCluster.RemoveMachineFromCluster(ctx, m); err != nil {
+			logger.Error(err, "failed to remove machine from microcluster")
+			return ctrl.Result{}, fmt.Errorf("failed to remove machine from microcluster: %w", err)
 		}
 		logger.Info("removing the annotation PreTerminateDeleteHookAnnotationPrefix")
 		patchHelper, err := patch.NewHelper(m, r.Client)
