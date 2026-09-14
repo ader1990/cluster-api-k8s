@@ -20,7 +20,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
-	controlplanev1 "github.com/canonical/cluster-api-k8s/controlplane/api/v1beta3"
 	"github.com/canonical/cluster-api-k8s/pkg/ck8s"
 )
 
@@ -94,18 +93,8 @@ func (r *MachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 			logger.Info("wait for machine drain and detach volume operation complete.")
 			return ctrl.Result{}, nil
 		}
-		// Fetch the CK8sControlPlane instance.
-		kcp := &controlplanev1.CK8sControlPlane{}
-		if err := r.Get(ctx, req.NamespacedName, kcp); err != nil {
-			if apierrors.IsNotFound(err) {
-				logger.Error(err, "Failed to retrieve CK8sControlPlane: Not Found")
-				return ctrl.Result{}, nil
-			}
-			logger.Error(err, "Failed to retrieve CK8sControlPlane")
-			return ctrl.Result{}, err
-		}
 		// Fetch the Cluster.
-		cluster, err := util.GetOwnerCluster(ctx, r.Client, kcp.ObjectMeta)
+		cluster, err := util.GetOwnerCluster(ctx, r.Client, m.ObjectMeta)
 		if err != nil {
 			// It should be an issue to be investigated if the controller get the NotFound status.
 			// So, it should return the error.
@@ -116,7 +105,7 @@ func (r *MachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 			return ctrl.Result{}, nil
 		}
 
-		microclusterPort := kcp.Spec.CK8sConfigSpec.ControlPlaneConfig.GetMicroclusterPort()
+		microclusterPort := 2380
 		clusterObjectKey := util.ObjectKey(cluster)
 		workloadCluster, err := r.managementCluster.GetWorkloadCluster(ctx, clusterObjectKey, microclusterPort)
 		if err != nil {
