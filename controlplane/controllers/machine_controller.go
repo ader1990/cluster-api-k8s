@@ -82,6 +82,7 @@ func (r *MachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		Name:      m.Labels["cluster.x-k8s.io/cluster-name"],
 	}, cluster)
 	if errCluster != nil {
+		logger.Info("owner cluster could not be retrieved.")
 		return ctrl.Result{}, errCluster
 	}
 
