@@ -101,8 +101,11 @@ func (r *MachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 			return ctrl.Result{}, pkgerrors.Wrapf(err, "failed to retrieve owner Cluster")
 		}
 		if cluster == nil {
-			logger.Info("Cluster Controller has not yet set OwnerRef")
-			return ctrl.Result{}, nil
+			logger.Info("Cluster Controller has not yet set OwnerRef", "cluster", m.Labels["cluster.x-k8s.io/cluster-name"])
+			cluster = &clusterv1.Cluster{}
+			if err = r.Get(ctx, req.NamespacedName, cluster); err != nil {
+				return ctrl.Result{}, err
+			}
 		}
 
 		microclusterPort := 2380
