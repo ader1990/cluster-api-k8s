@@ -454,6 +454,8 @@ func (w *Workload) RemoveMachineFromCluster(ctx context.Context, machine *cluste
 
 	nodeName := machine.Status.NodeRef.Name
 	request := &apiv1.RemoveNodeRequest{Name: nodeName, Force: true}
+	logger := log.FromContext(ctx)
+	logger.Info("Removing node", "name", nodeName)
 
 	// If we see that ignoring control-planes is causing issues, let's consider removing it.
 	// It *should* not be necessary as a machine should be able to remove itself from the cluster.
@@ -467,6 +469,7 @@ func (w *Workload) RemoveMachineFromCluster(ctx context.Context, machine *cluste
 	if err := w.doK8sdRequest(ctx, k8sdProxy, http.MethodPost, fmt.Sprintf("%s/%s", apiv1.K8sdAPIVersion, apiv1.ClusterAPIRemoveNodeRPC), header, request, nil); err != nil {
 		return fmt.Errorf("failed to remove %s from cluster: %w", machine.Name, err)
 	}
+	logger.Info("Node removed", "name", nodeName)
 	return nil
 }
 

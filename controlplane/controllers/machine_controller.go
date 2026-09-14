@@ -125,6 +125,8 @@ func (r *MachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		if err := patchHelper.Patch(ctx, m); err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed to patch machine: %w", err)
 		}
+		logger.Info("machine got annotations removed")
+		return ctrl.Result{}, nil
 	}
 	logger.Info("machine got annotation check", "annotation key", clusterv1.PreTerminateDeleteHookAnnotationPrefix)
 	logger.Info("machine got annotation check", "annotation", m.Annotations[clusterv1.PreTerminateDeleteHookAnnotationPrefix])
