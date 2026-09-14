@@ -100,15 +100,16 @@ func (r *MachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		if m.Status.NodeRef.Name != "" {
 			node := &corev1.Node{}
 			if err := r.Get(ctx, client.ObjectKey{Name: m.Status.NodeRef.Name}, node); err == nil {
-				if len(node.Status.VolumesAttached) == 0 {
+				if len(node.Status.VolumesAttached) != 0 {
 					logger.Info("wait for machine drain and detach volume operation complete.")
+					return ctrl.Result{RequeueAfter: 20 * time.Second}, nil
 				}
 			}
 		}
 		c := conditions.Get(m, clusterv1.MachineDeletingCondition)
 		if c == nil || c.Status != metav1.ConditionTrue || c.Reason != clusterv1.MachineDeletingWaitingForPreTerminateHookReason || m.Status.Deletion.WaitForNodeVolumeDetachStartTime.IsZero() {
 			logger.Info("wait for machine drain and detach volume operation complete.")
-			return ctrl.Result{}, nil
+			return ctrl.Result{RequeueAfter: 20 * time.Second}, nil
 		}
 
 		microclusterPort := 2380
