@@ -13,6 +13,7 @@ import (
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/conditions"
+	v1beta1conditions "sigs.k8s.io/cluster-api/util/conditions/deprecated/v1beta1"
 	"sigs.k8s.io/cluster-api/util/patch"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -119,6 +120,11 @@ func (r *MachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		}
 		if c != nil && c.Status == metav1.ConditionTrue && c.Reason == clusterv1.MachineDeletingDrainingNodeReason {
 			logger.Info("wait for machine drain to complete.")
+			return ctrl.Result{RequeueAfter: 20 * time.Second}, nil
+		}
+
+		if v1beta1conditions.IsFalse(m, clusterv1.DrainingSucceededV1Beta1Condition) {
+			logger.Info("wait for machine drain to complete - using v1beta1conditions.")
 			return ctrl.Result{RequeueAfter: 20 * time.Second}, nil
 		}
 
