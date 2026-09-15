@@ -75,15 +75,6 @@ func (r *MachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		logger.Info("node-remove-error: machine could not be retrieved.")
 		return ctrl.Result{}, err
 	}
-	cluster := &clusterv1.Cluster{}
-	errCluster := r.Get(ctx, client.ObjectKey{
-		Namespace: m.Namespace,
-		Name:      m.Labels["cluster.x-k8s.io/cluster-name"],
-	}, cluster)
-	if errCluster != nil {
-		logger.Info("node-remove-error: owner cluster could not be retrieved.")
-		return ctrl.Result{}, errCluster
-	}
 
 	logger.Info("node-remove-info: machine gets deletion timestamp check")
 	if m.DeletionTimestamp.IsZero() {
@@ -93,24 +84,6 @@ func (r *MachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	if m.Status.Deletion.WaitForNodeVolumeDetachStartTime.IsZero() {
 		logger.Info("node-remove-wait: m.Status.Deletion.WaitForNodeVolumeDetachStartTime IsZero")
 		return ctrl.Result{RequeueAfter: 20 * time.Second}, nil
-	}
-	microclusterPort := 2380
-	clusterObjectKey := util.ObjectKey(cluster)
-	workloadCluster, err := r.managementCluster.GetWorkloadCluster(ctx, clusterObjectKey, microclusterPort)
-	if err != nil {
-		logger.Info("node-remove-error: failed to create client to workload cluster")
-		return ctrl.Result{}, fmt.Errorf("failed to create client to workload cluster: %w", err)
-	}
-	if m.Status.NodeRef.Name != "" {
-		node, err := workloadCluster.GetNode(ctx, m)
-		if err != nil {
-			logger.Info("node-remove-error: failed to get machine corresponding node")
-			return ctrl.Result{}, err
-		}
-		if len(node.Status.VolumesAttached) != 0 {
-			logger.Info("node-remove-wait: there are still volumes attached.")
-			return ctrl.Result{RequeueAfter: 20 * time.Second}, nil
-		}
 	}
 	c := conditions.Get(m, clusterv1.MachineDeletingCondition)
 	if c == nil {
@@ -130,6 +103,33 @@ func (r *MachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	if v1beta1conditions.IsFalse(m, clusterv1.DrainingSucceededV1Beta1Condition) {
 		logger.Info("wait for machine drain to complete - using v1beta1conditions.")
 		return ctrl.Result{RequeueAfter: 20 * time.Second}, nil
+	}
+	cluster := &clusterv1.Cluster{}
+	errCluster := r.Get(ctx, client.ObjectKey{
+		Namespace: m.Namespace,
+		Name:      m.Labels["cluster.x-k8s.io/cluster-name"],
+	}, cluster)
+	if errCluster != nil {
+		logger.Info("node-remove-error: owner cluster could not be retrieved.")
+		return ctrl.Result{}, errCluster
+	}
+	microclusterPort := 2380
+	clusterObjectKey := util.ObjectKey(cluster)
+	workloadCluster, err := r.managementCluster.GetWorkloadCluster(ctx, clusterObjectKey, microclusterPort)
+	if err != nil {
+		logger.Info("node-remove-error: failed to create client to workload cluster")
+		return ctrl.Result{}, fmt.Errorf("failed to create client to workload cluster: %w", err)
+	}
+	if m.Status.NodeRef.Name != "" {
+		node, err := workloadCluster.GetNode(ctx, m)
+		if err != nil {
+			logger.Info("node-remove-error: failed to get machine corresponding node")
+			return ctrl.Result{}, err
+		}
+		if len(node.Status.VolumesAttached) != 0 {
+			logger.Info("node-remove-wait: there are still volumes attached.")
+			return ctrl.Result{RequeueAfter: 20 * time.Second}, nil
+		}
 	}
 
 	logger.Info("machine gets annotation check")
