@@ -101,7 +101,7 @@ func (r *MachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 
 	if v1beta1conditions.IsFalse(m, clusterv1.DrainingSucceededV1Beta1Condition) {
-		logger.Info("wait for machine drain to complete - using v1beta1conditions.")
+		logger.Info("node-remove-wait: wait for machine drain to complete - using v1beta1conditions.")
 		return ctrl.Result{RequeueAfter: 20 * time.Second}, nil
 	}
 	cluster := &clusterv1.Cluster{}
@@ -132,11 +132,11 @@ func (r *MachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		}
 	}
 
-	logger.Info("machine gets annotation check")
+	logger.Info("node-ready-for-annotation-removal: machine gets annotation check")
 	// if machine registered PreTerminate hook, wait for capi asks to resolve PreTerminateDeleteHook
 	if annotations.HasWithPrefix(clusterv1.PreTerminateDeleteHookAnnotationPrefix, m.Annotations) &&
 		m.Annotations[PreTerminateHookCleanupAnnotation] == ck8sHookName {
-		logger.Info("removing the annotation PreTerminateDeleteHookAnnotationPrefix")
+		logger.Info("node-ready-for-annotation-removal: removing the annotation PreTerminateDeleteHookAnnotationPrefix")
 		patchHelper, err := patch.NewHelper(m, r.Client)
 		if err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed to create patch helper for machine: %w", err)
@@ -148,13 +148,15 @@ func (r *MachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		if err := patchHelper.Patch(ctx, m); err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed to patch machine: %w", err)
 		}
-		logger.Info("machine got annotations removed")
+		logger.Info("node-ready-for-annotation-removal: machine got annotations removed")
 		return ctrl.Result{RequeueAfter: 20 * time.Second}, nil
 	}
 
+	logger.Info("node-ready-for-cluster-removal: ready to be removed from cluster")
 	if err := workloadCluster.RemoveMachineFromCluster(ctx, m); err != nil {
 		logger.Error(err, "failed to remove machine from microcluster")
 		return ctrl.Result{}, fmt.Errorf("failed to remove machine from microcluster: %w", err)
 	}
+	logger.Info("node-ready-for-cluster-removal: removed from cluster")
 	return ctrl.Result{}, nil
 }
