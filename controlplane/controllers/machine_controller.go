@@ -94,16 +94,6 @@ func (r *MachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		logger.Info("node-remove-wait: clusterv1.MachineDeletingCondition condition is not true")
 		return ctrl.Result{RequeueAfter: 20 * time.Second}, nil
 	}
-
-	if c.Reason != clusterv1.MachineDeletingWaitingForPreTerminateHookReason {
-		logger.Info("node-remove-wait: clusterv1.MachineDeletingCondition does not have clusterv1.MachineDeletingWaitingForPreTerminateHookReason", "current reason", c.Reason)
-		return ctrl.Result{RequeueAfter: 20 * time.Second}, nil
-	}
-
-	if v1beta1conditions.IsFalse(m, clusterv1.DrainingSucceededV1Beta1Condition) {
-		logger.Info("node-remove-wait: wait for machine drain to complete - using v1beta1conditions.")
-		return ctrl.Result{RequeueAfter: 20 * time.Second}, nil
-	}
 	cluster := &clusterv1.Cluster{}
 	errCluster := r.Get(ctx, client.ObjectKey{
 		Namespace: m.Namespace,
@@ -119,6 +109,24 @@ func (r *MachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	if err != nil {
 		logger.Info("node-remove-error: failed to create client to workload cluster")
 		return ctrl.Result{}, fmt.Errorf("failed to create client to workload cluster: %w", err)
+	}
+
+	if c.Reason != clusterv1.MachineDeletingWaitingForPreTerminateHookReason {
+		logger.Info("node-remove-wait: clusterv1.MachineDeletingCondition does not have clusterv1.MachineDeletingWaitingForPreTerminateHookReason", "current reason", c.Reason)
+		if c.Reason == clusterv1.MachineDeletingWaitingForInfrastructureDeletionReason || c.Reason == clusterv1.MachineDeletingWaitingForBootstrapDeletionReason || c.Reason == clusterv1.MachineDeletingDeletionCompletedReason {
+			logger.Info("node-ready-for-cluster-removal: ready to be re-removed from cluster")
+			if err := workloadCluster.RemoveMachineFromCluster(ctx, m); err != nil {
+				logger.Error(err, "failed to remove machine from microcluster")
+				return ctrl.Result{}, fmt.Errorf("failed to remove machine from microcluster: %w", err)
+			}
+			logger.Info("node-ready-for-cluster-removal: re-removed from cluster")
+		}
+		return ctrl.Result{RequeueAfter: 20 * time.Second}, nil
+	}
+
+	if v1beta1conditions.IsFalse(m, clusterv1.DrainingSucceededV1Beta1Condition) {
+		logger.Info("node-remove-wait: wait for machine drain to complete - using v1beta1conditions.")
+		return ctrl.Result{RequeueAfter: 20 * time.Second}, nil
 	}
 	if m.Status.NodeRef.Name != "" {
 		node, err := workloadCluster.GetNode(ctx, m)
