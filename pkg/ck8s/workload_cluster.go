@@ -44,6 +44,7 @@ type WorkloadCluster interface {
 	NewWorkerJoinToken(ctx context.Context) (string, error)
 
 	RemoveMachineFromCluster(ctx context.Context, machine *clusterv1.Machine) error
+	GetNode(ctx context.Context, machine *clusterv1.Machine) (*corev1.Node, error)
 }
 
 // Workload defines operations on workload clusters.
@@ -77,6 +78,23 @@ func (w *Workload) getControlPlaneNodes(ctx context.Context) (*corev1.NodeList, 
 		return nil, err
 	}
 	return nodes, nil
+}
+
+func (w *Workload) GetNode(ctx context.Context, machine *clusterv1.Machine) (*corev1.Node, error) {
+	if machine == nil {
+		return nil, fmt.Errorf("machine object is nil")
+	}
+
+	if machine.Status.NodeRef.Name == "" {
+		return nil, fmt.Errorf("machine %s has no node reference", machine.Name)
+	}
+
+	node := &corev1.Node{}
+	if err := w.Client.Get(ctx, ctrlclient.ObjectKey{Name: machine.Status.NodeRef.Name}, node); err != nil {
+		return nil, fmt.Errorf("failed to get node: %w", err)
+	}
+
+	return node, nil
 }
 
 // ClusterStatus returns the status of the cluster.
@@ -454,6 +472,8 @@ func (w *Workload) RemoveMachineFromCluster(ctx context.Context, machine *cluste
 
 	nodeName := machine.Status.NodeRef.Name
 	request := &apiv1.RemoveNodeRequest{Name: nodeName, Force: true}
+	logger := log.FromContext(ctx)
+	logger.Info("Removing node", "name", nodeName)
 
 	// If we see that ignoring control-planes is causing issues, let's consider removing it.
 	// It *should* not be necessary as a machine should be able to remove itself from the cluster.
@@ -467,6 +487,7 @@ func (w *Workload) RemoveMachineFromCluster(ctx context.Context, machine *cluste
 	if err := w.doK8sdRequest(ctx, k8sdProxy, http.MethodPost, fmt.Sprintf("%s/%s", apiv1.K8sdAPIVersion, apiv1.ClusterAPIRemoveNodeRPC), header, request, nil); err != nil {
 		return fmt.Errorf("failed to remove %s from cluster: %w", machine.Name, err)
 	}
+	logger.Info("Node removed", "name", nodeName)
 	return nil
 }
 
