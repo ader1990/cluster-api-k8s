@@ -59,8 +59,6 @@ func (r *MachineReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manag
 
 // +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=clusters;clusters/status,verbs=get;list;watch
 // +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=machines;machines/status,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups="",resources=nodes,verbs=get;list;watch
-
 func (r *MachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := r.Log.WithValues("namespace", req.Namespace, "machine", req.Name)
 	logger.Info("machine gets reconciled.")
@@ -98,6 +96,13 @@ func (r *MachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	// if machine registered PreTerminate hook, wait for capi asks to resolve PreTerminateDeleteHook
 	if annotations.HasWithPrefix(clusterv1.PreTerminateDeleteHookAnnotationPrefix, m.Annotations) &&
 		m.Annotations[PreTerminateHookCleanupAnnotation] == ck8sHookName {
+		microclusterPort := 2380
+		clusterObjectKey := util.ObjectKey(cluster)
+		workloadCluster, err := r.managementCluster.GetWorkloadCluster(ctx, clusterObjectKey, microclusterPort)
+		if err != nil {
+			logger.Error(err, "failed to create client to workload cluster")
+			return ctrl.Result{}, fmt.Errorf("failed to create client to workload cluster: %w", err)
+		}
 		if m.Status.NodeRef.Name != "" {
 			node := &corev1.Node{}
 			if err := r.Get(ctx, client.ObjectKey{Name: m.Status.NodeRef.Name}, node); err == nil {
@@ -113,13 +118,6 @@ func (r *MachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 			return ctrl.Result{RequeueAfter: 20 * time.Second}, nil
 		}
 
-		microclusterPort := 2380
-		clusterObjectKey := util.ObjectKey(cluster)
-		workloadCluster, err := r.managementCluster.GetWorkloadCluster(ctx, clusterObjectKey, microclusterPort)
-		if err != nil {
-			logger.Error(err, "failed to create client to workload cluster")
-			return ctrl.Result{}, fmt.Errorf("failed to create client to workload cluster: %w", err)
-		}
 		if err := workloadCluster.RemoveMachineFromCluster(ctx, m); err != nil {
 			logger.Error(err, "failed to remove machine from microcluster")
 			return ctrl.Result{}, fmt.Errorf("failed to remove machine from microcluster: %w", err)
