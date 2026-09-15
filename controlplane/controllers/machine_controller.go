@@ -61,19 +61,18 @@ func (r *MachineReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manag
 // +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=machines;machines/status,verbs=get;list;watch;create;update;patch;delete
 func (r *MachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := r.Log.WithValues("namespace", req.Namespace, "machine", req.Name)
-	logger.Info("machine gets reconciled.")
 
 	m := &clusterv1.Machine{}
 	if err := r.Get(ctx, req.NamespacedName, m); err != nil {
 		if apierrors.IsNotFound(err) {
 			// Object not found, return.  Created objects are automatically garbage collected.
 			// For additional cleanup logic use finalizers.
-			logger.Info("machine not found.")
+			logger.Info("node-remove-error: machine not found.")
 			return ctrl.Result{}, nil
 		}
 
 		// Error reading the object - requeue the request.
-		logger.Info("machine could not be retrieved.")
+		logger.Info("node-remove-error: machine could not be retrieved.")
 		return ctrl.Result{}, err
 	}
 	cluster := &clusterv1.Cluster{}
@@ -82,13 +81,54 @@ func (r *MachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		Name:      m.Labels["cluster.x-k8s.io/cluster-name"],
 	}, cluster)
 	if errCluster != nil {
-		logger.Info("owner cluster could not be retrieved.")
+		logger.Info("node-remove-error: owner cluster could not be retrieved.")
 		return ctrl.Result{}, errCluster
 	}
 
-	logger.Info("machine gets deletion timestamp check")
+	logger.Info("node-remove-info: machine gets deletion timestamp check")
 	if m.DeletionTimestamp.IsZero() {
-		logger.Info("machine does not have a deletion timestamp.")
+		logger.Info("node-remove-info: machine does not have a deletion timestamp.")
+		return ctrl.Result{RequeueAfter: 20 * time.Second}, nil
+	}
+	if m.Status.Deletion.WaitForNodeVolumeDetachStartTime.IsZero() {
+		logger.Info("node-remove-wait: m.Status.Deletion.WaitForNodeVolumeDetachStartTime IsZero")
+		return ctrl.Result{RequeueAfter: 20 * time.Second}, nil
+	}
+	microclusterPort := 2380
+	clusterObjectKey := util.ObjectKey(cluster)
+	workloadCluster, err := r.managementCluster.GetWorkloadCluster(ctx, clusterObjectKey, microclusterPort)
+	if err != nil {
+		logger.Info("node-remove-error: failed to create client to workload cluster")
+		return ctrl.Result{}, fmt.Errorf("failed to create client to workload cluster: %w", err)
+	}
+	if m.Status.NodeRef.Name != "" {
+		node, err := workloadCluster.GetNode(ctx, m)
+		if err != nil {
+			logger.Info("node-remove-error: failed to get machine corresponding node")
+			return ctrl.Result{}, err
+		}
+		if len(node.Status.VolumesAttached) != 0 {
+			logger.Info("node-remove-wait: there are still volumes attached.")
+			return ctrl.Result{RequeueAfter: 20 * time.Second}, nil
+		}
+	}
+	c := conditions.Get(m, clusterv1.MachineDeletingCondition)
+	if c == nil {
+		logger.Info("node-remove-wait: clusterv1.MachineDeletingCondition is not set")
+		return ctrl.Result{RequeueAfter: 20 * time.Second}, nil
+	}
+	if c.Status != metav1.ConditionTrue {
+		logger.Info("node-remove-wait: clusterv1.MachineDeletingCondition condition is not true")
+		return ctrl.Result{RequeueAfter: 20 * time.Second}, nil
+	}
+
+	if c.Reason != clusterv1.MachineDeletingWaitingForPreTerminateHookReason {
+		logger.Info("node-remove-wait: clusterv1.MachineDeletingCondition does not have clusterv1.MachineDeletingWaitingForPreTerminateHookReason", "current reason", c.Reason)
+		return ctrl.Result{RequeueAfter: 20 * time.Second}, nil
+	}
+
+	if v1beta1conditions.IsFalse(m, clusterv1.DrainingSucceededV1Beta1Condition) {
+		logger.Info("wait for machine drain to complete - using v1beta1conditions.")
 		return ctrl.Result{RequeueAfter: 20 * time.Second}, nil
 	}
 
@@ -96,38 +136,6 @@ func (r *MachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	// if machine registered PreTerminate hook, wait for capi asks to resolve PreTerminateDeleteHook
 	if annotations.HasWithPrefix(clusterv1.PreTerminateDeleteHookAnnotationPrefix, m.Annotations) &&
 		m.Annotations[PreTerminateHookCleanupAnnotation] == ck8sHookName {
-		microclusterPort := 2380
-		clusterObjectKey := util.ObjectKey(cluster)
-		workloadCluster, err := r.managementCluster.GetWorkloadCluster(ctx, clusterObjectKey, microclusterPort)
-		if err != nil {
-			logger.Error(err, "failed to create client to workload cluster")
-			return ctrl.Result{}, fmt.Errorf("failed to create client to workload cluster: %w", err)
-		}
-		if m.Status.NodeRef.Name != "" {
-			node, err := workloadCluster.GetNode(ctx, m)
-			if err != nil {
-				return ctrl.Result{}, err
-			}
-			if len(node.Status.VolumesAttached) != 0 {
-				logger.Info("wait for node detach volume operation to complete.")
-				return ctrl.Result{RequeueAfter: 20 * time.Second}, nil
-			}
-		}
-		c := conditions.Get(m, clusterv1.MachineDeletingCondition)
-		if c == nil || c.Status != metav1.ConditionTrue || c.Reason != clusterv1.MachineDeletingWaitingForPreTerminateHookReason || m.Status.Deletion.WaitForNodeVolumeDetachStartTime.IsZero() {
-			logger.Info("wait for machine drain and detach volume operation complete.")
-			return ctrl.Result{RequeueAfter: 20 * time.Second}, nil
-		}
-		if c != nil && c.Status == metav1.ConditionTrue && c.Reason == clusterv1.MachineDeletingDrainingNodeReason {
-			logger.Info("wait for machine drain to complete.")
-			return ctrl.Result{RequeueAfter: 20 * time.Second}, nil
-		}
-
-		if v1beta1conditions.IsFalse(m, clusterv1.DrainingSucceededV1Beta1Condition) {
-			logger.Info("wait for machine drain to complete - using v1beta1conditions.")
-			return ctrl.Result{RequeueAfter: 20 * time.Second}, nil
-		}
-
 		logger.Info("removing the annotation PreTerminateDeleteHookAnnotationPrefix")
 		patchHelper, err := patch.NewHelper(m, r.Client)
 		if err != nil {
