@@ -44,6 +44,7 @@ type WorkloadCluster interface {
 	NewWorkerJoinToken(ctx context.Context) (string, error)
 
 	RemoveMachineFromCluster(ctx context.Context, machine *clusterv1.Machine) error
+	GetNode(ctx context.Context, machine *clusterv1.Machine) (*corev1.Node, error)
 }
 
 // Workload defines operations on workload clusters.
@@ -77,6 +78,23 @@ func (w *Workload) getControlPlaneNodes(ctx context.Context) (*corev1.NodeList, 
 		return nil, err
 	}
 	return nodes, nil
+}
+
+func (w *Workload) GetNode(ctx context.Context, machine *clusterv1.Machine) (*corev1.Node, error) {
+	if machine == nil {
+		return nil, fmt.Errorf("machine object is nil")
+	}
+
+	if machine.Status.NodeRef.Name == "" {
+		return nil, fmt.Errorf("machine %s has no node reference", machine.Name)
+	}
+
+	node := &corev1.Node{}
+	if err := w.Client.Get(ctx, ctrlclient.ObjectKey{Name: machine.Status.NodeRef.Name}, node); err != nil {
+		return nil, fmt.Errorf("failed to get node: %w", err)
+	}
+
+	return node, nil
 }
 
 // ClusterStatus returns the status of the cluster.

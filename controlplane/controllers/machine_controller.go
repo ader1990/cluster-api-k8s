@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -104,12 +103,13 @@ func (r *MachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 			return ctrl.Result{}, fmt.Errorf("failed to create client to workload cluster: %w", err)
 		}
 		if m.Status.NodeRef.Name != "" {
-			node := &corev1.Node{}
-			if err := r.Get(ctx, client.ObjectKey{Name: m.Status.NodeRef.Name}, node); err == nil {
-				if len(node.Status.VolumesAttached) != 0 {
-					logger.Info("wait for machine drain and detach volume operation complete.")
-					return ctrl.Result{RequeueAfter: 20 * time.Second}, nil
-				}
+			node, err := workloadCluster.GetNode(ctx, m)
+			if err != nil {
+				return ctrl.Result{}, err
+			}
+			if len(node.Status.VolumesAttached) != 0 {
+				logger.Info("wait for node detach volume operation to complete.")
+				return ctrl.Result{RequeueAfter: 20 * time.Second}, nil
 			}
 		}
 		c := conditions.Get(m, clusterv1.MachineDeletingCondition)
