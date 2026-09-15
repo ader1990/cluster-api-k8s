@@ -117,6 +117,10 @@ func (r *MachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 			logger.Info("wait for machine drain and detach volume operation complete.")
 			return ctrl.Result{RequeueAfter: 20 * time.Second}, nil
 		}
+		if c != nil && c.Status == metav1.ConditionTrue && c.Reason == clusterv1.MachineDeletingDrainingNodeReason {
+			logger.Info("wait for machine drain to complete.")
+			return ctrl.Result{RequeueAfter: 20 * time.Second}, nil
+		}
 
 		if err := workloadCluster.RemoveMachineFromCluster(ctx, m); err != nil {
 			logger.Error(err, "failed to remove machine from microcluster")
