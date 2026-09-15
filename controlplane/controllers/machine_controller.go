@@ -128,10 +128,6 @@ func (r *MachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 			return ctrl.Result{RequeueAfter: 20 * time.Second}, nil
 		}
 
-		if err := workloadCluster.RemoveMachineFromCluster(ctx, m); err != nil {
-			logger.Error(err, "failed to remove machine from microcluster")
-			return ctrl.Result{}, fmt.Errorf("failed to remove machine from microcluster: %w", err)
-		}
 		logger.Info("removing the annotation PreTerminateDeleteHookAnnotationPrefix")
 		patchHelper, err := patch.NewHelper(m, r.Client)
 		if err != nil {
@@ -145,12 +141,12 @@ func (r *MachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 			return ctrl.Result{}, fmt.Errorf("failed to patch machine: %w", err)
 		}
 		logger.Info("machine got annotations removed")
-		return ctrl.Result{}, nil
+		return ctrl.Result{RequeueAfter: 20 * time.Second}, nil
 	}
-	logger.Info("machine got annotation check", "annotation key", clusterv1.PreTerminateDeleteHookAnnotationPrefix)
-	logger.Info("machine got annotation check", "annotation", m.Annotations[clusterv1.PreTerminateDeleteHookAnnotationPrefix])
-	logger.Info("machine got annotation check", "annotation key", PreTerminateHookCleanupAnnotation)
-	logger.Info("machine got annotation check", "annotation", m.Annotations[PreTerminateHookCleanupAnnotation])
 
+	if err := workloadCluster.RemoveMachineFromCluster(ctx, m); err != nil {
+		logger.Error(err, "failed to remove machine from microcluster")
+		return ctrl.Result{}, fmt.Errorf("failed to remove machine from microcluster: %w", err)
+	}
 	return ctrl.Result{}, nil
 }
