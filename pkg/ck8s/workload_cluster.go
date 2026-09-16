@@ -43,7 +43,7 @@ type WorkloadCluster interface {
 	NewControlPlaneJoinToken(ctx context.Context, name string) (string, error)
 	NewWorkerJoinToken(ctx context.Context) (string, error)
 
-	RemoveMachineFromCluster(ctx context.Context, machine *clusterv1.Machine, nodeToken string) error
+	RemoveMachineFromCluster(ctx context.Context, machine *clusterv1.Machine) error
 	GetNode(ctx context.Context, machine *clusterv1.Machine) (*corev1.Node, error)
 }
 
@@ -462,7 +462,7 @@ func (w *Workload) requestJoinToken(ctx context.Context, name string, worker boo
 	return response.EncodedToken, nil
 }
 
-func (w *Workload) RemoveMachineFromCluster(ctx context.Context, machine *clusterv1.Machine, nodeToken string) error {
+func (w *Workload) RemoveMachineFromCluster(ctx context.Context, machine *clusterv1.Machine) error {
 	if machine == nil {
 		return fmt.Errorf("machine object is not set")
 	}
@@ -471,23 +471,6 @@ func (w *Workload) RemoveMachineFromCluster(ctx context.Context, machine *cluste
 	}
 
 	logger := log.FromContext(ctx)
-	responseStatus := &apiv1.ClusterStatusResponse{}
-
-	k8sdProxyStatus, errStatus := w.GetK8sdProxyForControlPlane(ctx, k8sdProxyOptions{})
-	if errStatus != nil {
-		return fmt.Errorf("failed to create k8sd proxy: %w", errStatus)
-	}
-
-	headerStatus := w.newHeaderWithNodeToken(nodeToken)
-
-	if errStatus := w.doK8sdRequest(ctx, k8sdProxyStatus, http.MethodPost, fmt.Sprintf("%s/%s", apiv1.K8sdAPIVersion, apiv1.ClusterStatusRPC), headerStatus, nil, responseStatus); errStatus != nil {
-		logger.Error(errStatus, "failed to get cluster status")
-		if errStatus := w.doK8sdRequest(ctx, k8sdProxyStatus, http.MethodGet, fmt.Sprintf("%s/%s", apiv1.K8sdAPIVersion, apiv1.ClusterStatusRPC), headerStatus, nil, responseStatus); errStatus != nil {
-			logger.Error(errStatus, "failed to get cluster status")
-		}
-	} else {
-		logger.Info("Cluster status", "members", responseStatus.ClusterStatus.Members)
-	}
 
 	nodeName := machine.Status.NodeRef.Name
 	request := &apiv1.RemoveNodeRequest{Name: nodeName, Force: false}

@@ -21,7 +21,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	"github.com/canonical/cluster-api-k8s/pkg/ck8s"
-	"github.com/canonical/cluster-api-k8s/pkg/token"
 )
 
 // MachineReconciler reconciles a Machine object.
@@ -104,11 +103,6 @@ func (r *MachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		logger.Info("node-remove-error: owner cluster could not be retrieved.")
 		return ctrl.Result{}, errCluster
 	}
-	nodeToken, errNodeToken := token.LookupNodeToken(ctx, r.Client, util.ObjectKey(cluster), m.Name)
-	if errNodeToken != nil {
-		logger.Error(errNodeToken, "Failed to get node token")
-	}
-	logger.Info("Got node token", "value", nodeToken)
 	microclusterPort := 2380
 	clusterObjectKey := util.ObjectKey(cluster)
 	workloadCluster, err := r.managementCluster.GetWorkloadCluster(ctx, clusterObjectKey, microclusterPort)
@@ -121,7 +115,7 @@ func (r *MachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		logger.Info("node-remove-wait: clusterv1.MachineDeletingCondition does not have clusterv1.MachineDeletingWaitingForPreTerminateHookReason", "current reason", c.Reason)
 		if c.Reason == clusterv1.MachineDeletingWaitingForInfrastructureDeletionReason || c.Reason == clusterv1.MachineDeletingWaitingForBootstrapDeletionReason || c.Reason == clusterv1.MachineDeletingDeletionCompletedReason {
 			logger.Info("node-ready-for-cluster-removal: ready to be re-removed from cluster")
-			if err := workloadCluster.RemoveMachineFromCluster(ctx, m, ""); err != nil {
+			if err := workloadCluster.RemoveMachineFromCluster(ctx, m); err != nil {
 				logger.Error(err, "failed to remove machine from microcluster")
 				return ctrl.Result{}, fmt.Errorf("failed to remove machine from microcluster: %w", err)
 			}
@@ -167,7 +161,7 @@ func (r *MachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 			}
 			time.Sleep(30 * time.Second)
 			logger.Info("node-ready-for-cluster-removal: ready to be removed from cluster")
-			if err := workloadCluster.RemoveMachineFromCluster(ctx, m, ""); err != nil {
+			if err := workloadCluster.RemoveMachineFromCluster(ctx, m); err != nil {
 				logger.Error(err, "failed to remove machine from microcluster")
 				return ctrl.Result{}, fmt.Errorf("failed to remove machine from microcluster: %w", err)
 			}
@@ -177,7 +171,7 @@ func (r *MachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 		time.Sleep(30 * time.Second)
 		logger.Info("node-ready-for-cluster-removal: ready to be re-removed from cluster")
-		if err := workloadCluster.RemoveMachineFromCluster(ctx, m, nodeToken); err != nil {
+		if err := workloadCluster.RemoveMachineFromCluster(ctx, m); err != nil {
 			logger.Error(err, "failed to re-remove machine from microcluster")
 		}
 		logger.Info("node-ready-for-cluster-removal: re-removed from cluster")
