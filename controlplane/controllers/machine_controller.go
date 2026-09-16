@@ -81,7 +81,7 @@ func (r *MachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		logger.Info("node-remove-info: machine does not have a deletion timestamp.")
 		return ctrl.Result{RequeueAfter: 20 * time.Second}, nil
 	}
-	if m.Status.Deletion.WaitForNodeVolumeDetachStartTime.IsZero() {
+	if m.Status.Deletion != nil && m.Status.Deletion.WaitForNodeVolumeDetachStartTime.IsZero() {
 		logger.Info("node-remove-wait: m.Status.Deletion.WaitForNodeVolumeDetachStartTime IsZero")
 		return ctrl.Result{RequeueAfter: 120 * time.Second}, nil
 	}
