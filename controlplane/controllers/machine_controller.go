@@ -83,7 +83,7 @@ func (r *MachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 	if m.Status.Deletion != nil && m.Status.Deletion.WaitForNodeVolumeDetachStartTime.IsZero() {
 		logger.Info("node-remove-wait: m.Status.Deletion.WaitForNodeVolumeDetachStartTime IsZero")
-		return ctrl.Result{RequeueAfter: 120 * time.Second}, nil
+		return ctrl.Result{RequeueAfter: 20 * time.Second}, nil
 	}
 	c := conditions.Get(m, clusterv1.MachineDeletingCondition)
 	if c == nil {
@@ -126,11 +126,11 @@ func (r *MachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	if v1beta1conditions.IsFalse(m, clusterv1.DrainingSucceededV1Beta1Condition) {
 		logger.Info("node-remove-wait: wait for machine drain to complete - using v1beta1conditions.")
-		return ctrl.Result{RequeueAfter: 120 * time.Second}, nil
+		return ctrl.Result{RequeueAfter: 20 * time.Second}, nil
 	}
 	if v1beta1conditions.IsFalse(m, clusterv1.VolumeDetachSucceededV1Beta1Condition) {
 		logger.Info("node-remove-wait: wait for machine volume detachment to complete - using v1beta1conditions.")
-		return ctrl.Result{RequeueAfter: 120 * time.Second}, nil
+		return ctrl.Result{RequeueAfter: 20 * time.Second}, nil
 	}
 	if m.Status.NodeRef.Name != "" {
 		node, err := workloadCluster.GetNode(ctx, m)
@@ -138,7 +138,7 @@ func (r *MachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 			logger.Info("node-remove-error: failed to get machine corresponding node")
 		} else if len(node.Status.VolumesAttached) != 0 {
 			logger.Info("node-remove-wait: there are still volumes attached.")
-			return ctrl.Result{RequeueAfter: 120 * time.Second}, nil
+			return ctrl.Result{RequeueAfter: 20 * time.Second}, nil
 		}
 	}
 
@@ -159,17 +159,15 @@ func (r *MachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 			if err := patchHelper.Patch(ctx, m); err != nil {
 				return ctrl.Result{}, fmt.Errorf("failed to patch machine: %w", err)
 			}
-			time.Sleep(30 * time.Second)
 			logger.Info("node-ready-for-cluster-removal: ready to be removed from cluster")
 			if err := workloadCluster.RemoveMachineFromCluster(ctx, m); err != nil {
 				logger.Error(err, "failed to remove machine from microcluster")
 				return ctrl.Result{}, fmt.Errorf("failed to remove machine from microcluster: %w", err)
 			}
 			logger.Info("node-ready-for-cluster-removal: removed from cluster")
-			return ctrl.Result{RequeueAfter: 120 * time.Second}, nil
+			return ctrl.Result{RequeueAfter: 20 * time.Second}, nil
 		}
 
-		time.Sleep(30 * time.Second)
 		logger.Info("node-ready-for-cluster-removal: ready to be re-removed from cluster")
 		if err := workloadCluster.RemoveMachineFromCluster(ctx, m); err != nil {
 			logger.Error(err, "failed to re-remove machine from microcluster")
