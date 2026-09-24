@@ -21,6 +21,18 @@ import clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 // Conditions and condition Reasons for the CK8sControlPlane object.
 
 const (
+	// MachinesReady reports an aggregate of current status of the machines controlled by the CK8sControlPlane.
+	MachinesReadyCondition clusterv1.ConditionType = "MachinesReady"
+)
+
+const (
+	MachinesNotReadyReason           = "MachinesNotReadyReason"
+	MachinesReadyUnknownReason       = "MachinesReadyUnknownReason"
+	MachinesReadyReason              = "MachinesReadyReason"
+	MachinesReadyInternalErrorReason = "MachinesReadyInternalErrorReason"
+)
+
+const (
 	// CertificatesAvailableCondition documents that cluster certificates were generated as part of the
 	// processing of a CK8sControlPlane object.
 	CertificatesAvailableCondition clusterv1.ConditionType = "CertificatesAvailable"
@@ -65,6 +77,9 @@ const (
 const (
 	// ControlPlaneComponentsHealthyCondition reports the overall status of the control plane.
 	ControlPlaneComponentsHealthyCondition clusterv1.ConditionType = "ControlPlaneComponentsHealthy"
+
+	// ControlPlaneComponentsUnhealthyReason (Severity=Error) documents all control plane components are healthy.
+	ControlPlaneComponentsHealthyReason = "ControlPlaneComponentsHealthy"
 
 	// ControlPlaneComponentsUnhealthyReason (Severity=Error) documents a control plane component not healthy.
 	ControlPlaneComponentsUnhealthyReason = "ControlPlaneComponentsUnhealthy"

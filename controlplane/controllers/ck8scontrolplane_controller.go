@@ -259,9 +259,8 @@ func patchCK8sControlPlane(ctx context.Context, patchHelper *patch.Helper, kcp *
 		ctx,
 		kcp,
 		patch.WithOwnedConditions{Conditions: []string{
-			clusterv1.ReadyCondition,
 			clusterv1.PausedCondition,
-			string(controlplanev1.MachineAgentHealthyCondition),
+			string(controlplanev1.MachinesReadyCondition),
 			string(controlplanev1.MachinesSpecUpToDateCondition),
 			string(controlplanev1.ResizedCondition),
 			string(controlplanev1.AvailableCondition),
@@ -590,6 +589,43 @@ func (r *CK8sControlPlaneReconciler) reconcile(ctx context.Context, cluster *clu
 
 	if err := r.syncMachines(ctx, kcp, controlPlane); err != nil {
 		return reconcile.Result{}, fmt.Errorf("failed to sync Machines: %w", err)
+	}
+	if len(ownedMachines.UnsortedList()) == 0 {
+		conditions.Set(kcp, metav1.Condition{
+			Type:   string(controlplanev1.MachinesReadyCondition),
+			Status: metav1.ConditionTrue,
+			Reason: controlplanev1.MachinesReadyReason,
+		})
+	} else {
+		readyCondition, err := conditions.NewAggregateCondition(
+			ownedMachines.UnsortedList(), clusterv1.MachineReadyCondition,
+			conditions.TargetConditionType(controlplanev1.MachinesReadyCondition),
+			conditions.CustomMergeStrategy{
+				MergeStrategy: conditions.DefaultMergeStrategy(
+					conditions.ComputeReasonFunc(conditions.GetDefaultComputeMergeReasonFunc(
+						controlplanev1.MachinesNotReadyReason,
+						controlplanev1.MachinesReadyUnknownReason,
+						controlplanev1.MachinesReadyReason,
+					)),
+				),
+			},
+		)
+		if err != nil {
+			conditions.Set(kcp, metav1.Condition{
+				Type:    string(controlplanev1.MachinesReadyCondition),
+				Status:  metav1.ConditionUnknown,
+				Reason:  controlplanev1.MachinesReadyInternalErrorReason,
+				Message: "Please check controller logs for errors",
+			})
+
+			log := ctrl.LoggerFrom(ctx)
+			log.Error(err, fmt.Sprintf("Failed to aggregate Machine's %s conditions", clusterv1.MachineReadyCondition))
+		} else {
+			if readyCondition.Reason == "" {
+				readyCondition.Reason = controlplanev1.MachinesReadyReason
+			}
+			conditions.Set(kcp, *readyCondition)
+		}
 	}
 
 	// Updates conditions reporting the status of static pods

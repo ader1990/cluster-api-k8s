@@ -674,6 +674,13 @@ func (w *Workload) UpdateAgentConditions(ctx context.Context, controlPlane *Cont
 					Reason:  controlplanev1.MachineAgentHealthyConditionReason,
 					Message: "",
 				})
+
+				conditions.Set(machine, metav1.Condition{
+					Type:    clusterv1.MachineUpToDateCondition,
+					Status:  metav1.ConditionTrue,
+					Reason:  clusterv1.MachineUpToDateReason,
+					Message: "",
+				})
 			}
 		}
 	}
@@ -800,7 +807,7 @@ func aggregateFromMachinesToKCP(input aggregateFromMachinesToKCPInput) {
 		conditions.Set(input.controlPlane.KCP, metav1.Condition{
 			Type:    input.condition,
 			Status:  metav1.ConditionTrue,
-			Reason:  "",
+			Reason:  controlplanev1.ControlPlaneComponentsHealthyReason,
 			Message: fmt.Sprintf("Following machines are reporting true: %s", strings.Join(kcpMachinesWithTrue.List(), ", ")),
 		})
 		return
