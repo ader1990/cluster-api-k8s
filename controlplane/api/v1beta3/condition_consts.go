@@ -21,12 +21,6 @@ import clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 // Conditions and condition Reasons for the CK8sControlPlane object.
 
 const (
-	// MachinesReady reports an aggregate of current status of the machines controlled by the CK8sControlPlane.
-	MachinesReadyCondition                       clusterv1.ConditionType = "MachinesReady"
-	CK8sControlPlaneMachineAgentHealthyCondition clusterv1.ConditionType = "AgentHealthy"
-)
-
-const (
 	// CertificatesAvailableCondition documents that cluster certificates were generated as part of the
 	// processing of a CK8sControlPlane object.
 	CertificatesAvailableCondition clusterv1.ConditionType = "CertificatesAvailable"
@@ -83,6 +77,8 @@ const (
 
 	// MachineAgentHealthyCondition reports a machine's operational status.
 	MachineAgentHealthyCondition clusterv1.ConditionType = "AgentHealthy"
+
+	MachineAgentHealthyConditionReason = "AgentHealthy"
 
 	// PodProvisioningReason (Severity=Info) documents a pod waiting to be provisioned i.e., Pod is in "Pending" phase.
 	PodProvisioningReason = "PodProvisioning"

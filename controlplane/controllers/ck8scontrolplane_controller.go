@@ -259,8 +259,9 @@ func patchCK8sControlPlane(ctx context.Context, patchHelper *patch.Helper, kcp *
 		ctx,
 		kcp,
 		patch.WithOwnedConditions{Conditions: []string{
+			clusterv1.ReadyCondition,
 			clusterv1.PausedCondition,
-			string(controlplanev1.MachinesReadyCondition),
+			string(controlplanev1.MachineAgentHealthyCondition),
 			string(controlplanev1.MachinesSpecUpToDateCondition),
 			string(controlplanev1.ResizedCondition),
 			string(controlplanev1.AvailableCondition),
