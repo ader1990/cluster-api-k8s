@@ -618,8 +618,7 @@ func (r *CK8sControlPlaneReconciler) reconcile(ctx context.Context, cluster *clu
 				Message: "Please check controller logs for errors",
 			})
 
-			log := ctrl.LoggerFrom(ctx)
-			log.Error(err, fmt.Sprintf("Failed to aggregate Machine's %s conditions", clusterv1.MachineReadyCondition))
+			logger.Error(err, fmt.Sprintf("Failed to aggregate Machine's %s conditions", clusterv1.MachinesReadyCondition))
 		} else {
 			if readyCondition.Reason == "" {
 				readyCondition.Reason = controlplanev1.MachinesReadyReason
@@ -638,6 +637,11 @@ func (r *CK8sControlPlaneReconciler) reconcile(ctx context.Context, cluster *clu
 	// otherwise continue with the other KCP operations.
 	if result, err := r.reconcileUnhealthyMachines(ctx, controlPlane); err != nil || !result.IsZero() {
 		return result, err
+	}
+
+	if !conditions.IsTrue(kcp, clusterv1.MachinesReadyCondition) {
+		logger.Info("clusterv1.MachinesReadyCondition is false, reqeueing")
+		return ctrl.Result{Requeue: true}, nil
 	}
 
 	// Control plane machines rollout due to configuration changes (e.g. upgrades) takes precedence over other operations.

@@ -71,10 +71,10 @@ providers:
 
 variables:
   KUBERNETES_VERSION_MANAGEMENT: "v1.35.8"
-  KUBERNETES_VERSION: "v1.35.8"
-  KUBERNETES_VERSION_UPGRADE_TO: "v1.36.4"
+  KUBERNETES_VERSION: "v1.34.11"
+  KUBERNETES_VERSION_UPGRADE_TO: "v1.35.8"
   IP_FAMILY: "IPv4"
-  IN_PLACE_UPGRADE_OPTION: "channel=1.36-classic/edge"
+  IN_PLACE_UPGRADE_OPTION: "channel=1.35-classic/stable"
   
   # LXD specific variables
   LXC_SECRET_NAME: "lxc-secret"
