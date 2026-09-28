@@ -590,6 +590,42 @@ func (r *CK8sControlPlaneReconciler) reconcile(ctx context.Context, cluster *clu
 	if err := r.syncMachines(ctx, kcp, controlPlane); err != nil {
 		return reconcile.Result{}, fmt.Errorf("failed to sync Machines: %w", err)
 	}
+	if len(ownedMachines.UnsortedList()) == 0 {
+		conditions.Set(kcp, metav1.Condition{
+			Type:   string(controlplanev1.MachinesReadyCondition),
+			Status: metav1.ConditionTrue,
+			Reason: controlplanev1.MachinesReadyReason,
+		})
+	} else {
+		readyCondition, err := conditions.NewAggregateCondition(
+			ownedMachines.UnsortedList(), clusterv1.MachineReadyCondition,
+			conditions.TargetConditionType(controlplanev1.MachinesReadyCondition),
+			conditions.CustomMergeStrategy{
+				MergeStrategy: conditions.DefaultMergeStrategy(
+					conditions.ComputeReasonFunc(conditions.GetDefaultComputeMergeReasonFunc(
+						controlplanev1.MachinesNotReadyReason,
+						controlplanev1.MachinesReadyUnknownReason,
+						controlplanev1.MachinesReadyReason,
+					)),
+				),
+			},
+		)
+		if err != nil {
+			conditions.Set(kcp, metav1.Condition{
+				Type:    string(controlplanev1.MachinesReadyCondition),
+				Status:  metav1.ConditionUnknown,
+				Reason:  controlplanev1.MachinesReadyInternalErrorReason,
+				Message: "Please check controller logs for errors",
+			})
+
+			logger.Error(err, fmt.Sprintf("Failed to aggregate Machine's %s conditions", clusterv1.MachinesReadyCondition))
+		} else {
+			if readyCondition.Reason == "" {
+				readyCondition.Reason = controlplanev1.MachinesReadyReason
+			}
+			conditions.Set(kcp, *readyCondition)
+		}
+	}
 
 	// Updates conditions reporting the status of static pods
 	// NOTE: Conditions reporting KCP operation progress like e.g. Resized or SpecUpToDate are inlined with the rest of the execution.
@@ -601,6 +637,11 @@ func (r *CK8sControlPlaneReconciler) reconcile(ctx context.Context, cluster *clu
 	// otherwise continue with the other KCP operations.
 	if result, err := r.reconcileUnhealthyMachines(ctx, controlPlane); err != nil || !result.IsZero() {
 		return result, err
+	}
+
+	if !conditions.IsTrue(kcp, clusterv1.MachinesReadyCondition) {
+		logger.Info("clusterv1.MachinesReadyCondition is false, reqeueing")
+		return ctrl.Result{Requeue: true}, nil
 	}
 
 	// Control plane machines rollout due to configuration changes (e.g. upgrades) takes precedence over other operations.
