@@ -96,7 +96,16 @@ var _ = Describe("Version upgrade v1beta2 to v1beta3", func() {
 				WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
 				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
 				WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
+
 			}, result)
+
+			clusterctl.UpgradeManagementClusterAndWait(ctx, clusterctl.UpgradeManagementClusterAndWaitInput{
+				ClusterProxy:          bootstrapClusterProxy,
+				ClusterctlConfigPath:  clusterctlConfigPath,
+				BootstrapProviders:    []string{"ck8s:v0.6.99"},
+				ControlPlaneProviders: []string{"ck8s:v0.6.99"},
+				LogFolder:             clusterctlLogFolder,
+			})
 		})
 	})
 })
