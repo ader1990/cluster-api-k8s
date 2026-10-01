@@ -281,7 +281,7 @@ func initBootstrapCluster(bootstrapClusterProxy framework.ClusterProxy, config *
 		RuntimeExtensionProviders: config.RuntimeExtensionProviders(),
 		AddonProviders:            config.AddonProviders(),
 		BootstrapProviders:        []string{bootstrapVersion},
-		ControlPlaneProviders:     []string{"ck8s"},
+		ControlPlaneProviders:     []string{bootstrapVersion},
 		LogFolder:                 filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName()),
 	}, config.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...)
 }
