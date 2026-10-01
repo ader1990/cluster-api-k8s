@@ -38,7 +38,7 @@ var _ = Describe("Version upgrade v1beta2 to v1beta3", func() {
 		specName               = "version-upgrade"
 		namespace              *corev1.Namespace
 		cancelWatches          context.CancelFunc
-		result                 *ApplyClusterTemplateAndWaitResultV2
+		result                 *ApplyClusterTemplateAndWaitResult
 		clusterName            string
 		clusterctlLogFolder    string
 		infrastructureProvider string
@@ -56,7 +56,7 @@ var _ = Describe("Version upgrade v1beta2 to v1beta3", func() {
 		// Create LXC secret for LXD provider if needed
 		createLXCSecret(ctx, bootstrapClusterProxy, e2eConfig, namespace.Name)
 
-		result = new(ApplyClusterTemplateAndWaitResultV2)
+		result = new(ApplyClusterTemplateAndWaitResult)
 
 		clusterctlLogFolder = filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName())
 	})
@@ -80,7 +80,7 @@ var _ = Describe("Version upgrade v1beta2 to v1beta3", func() {
 	Context("Creating a cluster", func() {
 		It("Should create a workload cluster with 1 control plane and 3 worker nodes [PR-Blocking]", func() {
 			By("Creating a workload cluster")
-			ApplyClusterTemplateAndWaitV2(ctx, ApplyClusterTemplateAndWaitInputV2{
+			ApplyClusterTemplateAndWait(ctx, ApplyClusterTemplateAndWaitInput{
 				ClusterProxy: bootstrapClusterProxy,
 				ConfigCluster: clusterctl.ConfigClusterInput{
 					LogFolder:                clusterctlLogFolder,
