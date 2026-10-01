@@ -43,6 +43,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	bootstrapv1 "github.com/canonical/cluster-api-k8s/bootstrap/api/v1beta3"
+	controlplanev1beta2 "github.com/canonical/cluster-api-k8s/controlplane/api/v1beta2"
 	controlplanev1 "github.com/canonical/cluster-api-k8s/controlplane/api/v1beta3"
 )
 
@@ -212,6 +213,7 @@ func initScheme() *runtime.Scheme {
 	sc := runtime.NewScheme()
 	framework.TryAddDefaultSchemes(sc)
 	Expect(controlplanev1.AddToScheme(sc)).To(Succeed())
+	Expect(controlplanev1beta2.AddToScheme(sc)).To(Succeed())
 	Expect(bootstrapv1.AddToScheme(sc)).To(Succeed())
 	Expect(dockerinfrav1.AddToScheme(sc)).To(Succeed())
 	return sc
