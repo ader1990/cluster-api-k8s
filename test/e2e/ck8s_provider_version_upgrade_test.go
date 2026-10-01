@@ -86,6 +86,7 @@ var _ = Describe("Version upgrade v1beta2 to v1beta3", func() {
 					LogFolder:                clusterctlLogFolder,
 					ClusterctlConfigPath:     clusterctlConfigPath,
 					KubeconfigPath:           bootstrapClusterProxy.GetKubeconfigPath(),
+					Flavor:                   "version-upgrade",
 					InfrastructureProvider:   infrastructureProvider,
 					Namespace:                namespace.Name,
 					ClusterName:              clusterName,

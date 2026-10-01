@@ -41,6 +41,7 @@ providers:
       - sourcePath: "../data/infrastructure-incus/cluster-template-upgrades.yaml"
       - sourcePath: "../data/infrastructure-incus/cluster-template-upgrades-max-surge-0.yaml"
       - sourcePath: "../data/infrastructure-incus/cluster-template.yaml"
+      - sourcePath: "../data/infrastructure-incus/cluster-template-version-upgrade.yaml"
   - name: ck8s
     type: BootstrapProvider
     versions:
