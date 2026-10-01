@@ -29,6 +29,7 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/mod/semver"
 	corev1 "k8s.io/api/core/v1"
+	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/klog/v2"
@@ -42,6 +43,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	bootstrapv1 "github.com/canonical/cluster-api-k8s/bootstrap/api/v1beta3"
+	controlplanev1beta2 "github.com/canonical/cluster-api-k8s/controlplane/api/v1beta2"
 	controlplanev1 "github.com/canonical/cluster-api-k8s/controlplane/api/v1beta3"
 )
 
@@ -324,7 +326,24 @@ type GetCK8sControlPlaneByClusterInput struct {
 func GetCK8sControlPlaneByCluster(ctx context.Context, input GetCK8sControlPlaneByClusterInput) *controlplanev1.CK8sControlPlane {
 	controlPlaneList := &controlplanev1.CK8sControlPlaneList{}
 	Eventually(func() error {
-		return input.Lister.List(ctx, controlPlaneList, byClusterOptions(input.ClusterName, input.Namespace)...)
+		err := input.Lister.List(ctx, controlPlaneList, byClusterOptions(input.ClusterName, input.Namespace)...)
+		if !apimeta.IsNoMatchError(err) {
+			return err
+		}
+
+		// v1beta3 CK8sControlPlane kind isn't registered on this cluster; fall back to v1beta2.
+		v1beta2List := &controlplanev1beta2.CK8sControlPlaneList{}
+		if err := input.Lister.List(ctx, v1beta2List, byClusterOptions(input.ClusterName, input.Namespace)...); err != nil {
+			return err
+		}
+
+		controlPlaneList.Items = make([]controlplanev1.CK8sControlPlane, len(v1beta2List.Items))
+		for i := range v1beta2List.Items {
+			if err := v1beta2List.Items[i].ConvertTo(&controlPlaneList.Items[i]); err != nil {
+				return fmt.Errorf("failed to convert v1beta2 CK8sControlPlane %s to v1beta3: %w", v1beta2List.Items[i].Name, err)
+			}
+		}
+		return nil
 	}, retryableOperationTimeout, retryableOperationInterval).Should(Succeed(), "Failed to list CK8sControlPlane object for Cluster %s", klog.KRef(input.Namespace, input.ClusterName))
 	Expect(len(controlPlaneList.Items)).ToNot(BeNumerically(">", 1), "Cluster %s should not have more than 1 CK8sControlPlane object", klog.KRef(input.Namespace, input.ClusterName))
 	if len(controlPlaneList.Items) == 1 {
