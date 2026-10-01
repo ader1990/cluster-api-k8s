@@ -241,3 +241,87 @@ func createLXCSecretInNamespace(ctx context.Context, clusterProxy framework.Clus
 
 	fmt.Printf("Created LXC secret with server: %s in namespace: %s\n", remote, namespace)
 }
+
+type UpgradeManagementClusterAndWaitInput struct {
+	ClusterProxy              framework.ClusterProxy
+	ClusterctlConfigPath      string
+	ClusterctlVariables       map[string]string
+	Contract                  string
+	CoreProvider              string
+	BootstrapProviders        []string
+	ControlPlaneProviders     []string
+	InfrastructureProviders   []string
+	IPAMProviders             []string
+	RuntimeExtensionProviders []string
+	AddonProviders            []string
+	LogFolder                 string
+	ClusterctlBinaryPath      string
+}
+
+// UpgradeManagementClusterAndWait upgrades provider a management cluster using clusterctl, and waits for the cluster to be ready.
+func UpgradeManagementClusterAndWait(ctx context.Context, input UpgradeManagementClusterAndWaitInput, intervals ...interface{}) {
+	Expect(ctx).NotTo(BeNil(), "ctx is required for UpgradeManagementClusterAndWait")
+	Expect(input.ClusterProxy).ToNot(BeNil(), "Invalid argument. input.ClusterProxy can't be nil when calling UpgradeManagementClusterAndWait")
+	Expect(input.ClusterctlConfigPath).To(BeAnExistingFile(), "Invalid argument. input.ClusterctlConfigPath must be an existing file when calling UpgradeManagementClusterAndWait")
+	// Check if the user want a custom upgrade
+	isCustomUpgrade := input.CoreProvider != "" ||
+		len(input.BootstrapProviders) > 0 ||
+		len(input.ControlPlaneProviders) > 0 ||
+		len(input.InfrastructureProviders) > 0 ||
+		len(input.IPAMProviders) > 0 ||
+		len(input.RuntimeExtensionProviders) > 0 ||
+		len(input.AddonProviders) > 0
+
+	Expect((input.Contract != "" && !isCustomUpgrade) || (input.Contract == "" && isCustomUpgrade)).To(BeTrue(), `Invalid argument. Either the input.Contract parameter or at least one of the following providers has to be set:
+		input.CoreProvider, input.BootstrapProviders, input.ControlPlaneProviders, input.InfrastructureProviders, input.IPAMProviders, input.RuntimeExtensionProviders, input.AddonProviders`)
+
+	Expect(os.MkdirAll(input.LogFolder, 0750)).To(Succeed(), "Invalid argument. input.LogFolder can't be created for UpgradeManagementClusterAndWait")
+
+	upgradeInput := clusterctl.UpgradeInput{
+		ClusterctlConfigPath:      input.ClusterctlConfigPath,
+		ClusterctlVariables:       input.ClusterctlVariables,
+		ClusterName:               input.ClusterProxy.GetName(),
+		KubeconfigPath:            input.ClusterProxy.GetKubeconfigPath(),
+		Contract:                  input.Contract,
+		CoreProvider:              input.CoreProvider,
+		BootstrapProviders:        input.BootstrapProviders,
+		ControlPlaneProviders:     input.ControlPlaneProviders,
+		InfrastructureProviders:   input.InfrastructureProviders,
+		IPAMProviders:             input.IPAMProviders,
+		RuntimeExtensionProviders: input.RuntimeExtensionProviders,
+		AddonProviders:            input.AddonProviders,
+		LogFolder:                 input.LogFolder,
+	}
+
+	client := input.ClusterProxy.GetClient()
+
+	if input.ClusterctlBinaryPath != "" {
+		Expect(clusterctl.UpgradeWithBinary(ctx, input.ClusterctlBinaryPath, upgradeInput)).To(Succeed())
+	} else {
+		clusterctl.Upgrade(ctx, upgradeInput)
+	}
+
+	By("Waiting for provider controllers to be running")
+	controllersDeployments := framework.GetControllerDeployments(ctx, framework.GetControllerDeploymentsInput{
+		Lister: client,
+		// This namespace has been dropped in v0.4.x.
+		// We have to exclude this namespace here as after an upgrade from v0.3x there won't
+		// be a controller in this namespace anymore and if we wait for it to come up the test would fail.
+		// Note: We can drop this as soon as we don't have a test upgrading from v0.3.x anymore.
+		ExcludeNamespaces: []string{"capi-webhook-system"},
+	})
+	Expect(controllersDeployments).ToNot(BeEmpty(), "The list of controller deployments should not be empty")
+	for _, deployment := range controllersDeployments {
+		framework.WaitForDeploymentsAvailable(ctx, framework.WaitForDeploymentsAvailableInput{
+			Getter:     client,
+			Deployment: deployment,
+		}, intervals...)
+
+		framework.WatchPodMetrics(ctx, framework.WatchPodMetricsInput{
+			GetLister:   client,
+			ClientSet:   input.ClusterProxy.GetClientSet(),
+			Deployment:  deployment,
+			MetricsPath: filepath.Join(input.LogFolder, "metrics", deployment.GetNamespace()),
+		})
+	}
+}
