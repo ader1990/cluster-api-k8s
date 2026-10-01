@@ -439,7 +439,18 @@ func WaitForControlPlaneToBeReady(ctx context.Context, input WaitForControlPlane
 		}
 		By(fmt.Sprintf("Getting the control plane %s", klog.KObj(input.ControlPlane)))
 		if err := input.Getter.Get(ctx, key, controlplane); err != nil {
-			return false, fmt.Errorf("failed to get KCP: %w", err)
+			if !apimeta.IsNoMatchError(err) {
+				return false, fmt.Errorf("failed to get KCP: %w", err)
+			}
+
+			// v1beta3 CK8sControlPlane kind isn't registered on this cluster; fall back to v1beta2.
+			v1beta2ControlPlane := &controlplanev1beta2.CK8sControlPlane{}
+			if err := input.Getter.Get(ctx, key, v1beta2ControlPlane); err != nil {
+				return false, fmt.Errorf("failed to get KCP: %w", err)
+			}
+			if err := v1beta2ControlPlane.ConvertTo(controlplane); err != nil {
+				return false, fmt.Errorf("failed to convert v1beta2 CK8sControlPlane to v1beta3: %w", err)
+			}
 		}
 
 		desiredReplicas := controlplane.Spec.Replicas
