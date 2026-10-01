@@ -62,6 +62,9 @@ providers:
         value: "https://github.com/canonical/cluster-api-k8s/releases/download/v0.6.2/bootstrap-components.yaml"
         type: "url"
         contract: v1beta2
+        files:
+          - sourcePath: "../data/shared/v1beta2/metadata.yaml"
+            targetName: "metadata.yaml"
   - name: ck8s
     type: ControlPlaneProvider
     versions:
@@ -77,6 +80,9 @@ providers:
         value: "https://github.com/canonical/cluster-api-k8s/releases/download/v0.6.2/control-plane-components.yaml"
         type: "url"
         contract: v1beta2
+        files:
+          - sourcePath: "../data/shared/v1beta2/metadata.yaml"
+            targetName: "metadata.yaml"
 
 variables:
   KUBERNETES_VERSION_MANAGEMENT: "v1.34.11"
